@@ -4,12 +4,14 @@
 #  from controller import Robot, Motor, DistanceSensor
 
 from controller import Robot,Motor
+import math
 
 TIME_STEP = 16
 TARGET_POINTS_SIZE = 13
 DISTANCE_TOLERANCE = 1.5
 MAX_SPEED = 7.0
 TURN_COEFFICIENT = 4.0
+REWARD_PER_DISTANCE = 1
 autopilot = True
 robot = Robot()
 actions = []
@@ -21,8 +23,16 @@ def robot_set_speed(left,right):
        motors[i + 4].setVelocity(right)
        
 
-def reward_function():
-    return 0
+def reward_function(prev_distance, next_distance):
+    change_in_distance = math.sqrt((prev_distance[0] - next_distance[0])**2 + (prev_distance[1] - next_distance[1])**2)
+    reward = change_in_distance * REWARD_PER_DISTANCE
+    return reward
+    
+def value_function():
+    pass
+
+def q_value_function():
+    pass
     
 def run_autopilot():
     speeds = [0.0, 0.0]
