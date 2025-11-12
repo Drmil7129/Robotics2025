@@ -18,7 +18,7 @@ motors = []
 def robot_set_speed(left,right):
   for i in range(4):
        motors[i + 0].setVelocity(left)
-       motors[i + 4].setVelocity(right)
+       motors[i + 1].setVelocity(right)
        
 
 def reward_function():
