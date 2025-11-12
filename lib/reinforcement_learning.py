@@ -5,7 +5,6 @@
 
 from controller import Robot,Motor
 import math
-import numpy as np
 
 TIME_STEP = 16
 TARGET_POINTS_SIZE = 13
@@ -13,11 +12,6 @@ DISTANCE_TOLERANCE = 1.5
 MAX_SPEED = 7.0
 TURN_COEFFICIENT = 4.0
 REWARD_PER_DISTANCE = 1
-NUM_OF_STATES = 2500
-NUM_OF_ACTIONS = 6
-Q_table = np.zeros(NUM_OF_STATES,NUM_OF_ACTIONS)
-
-
 autopilot = True
 robot = Robot()
 actions = []
@@ -34,6 +28,9 @@ def reward_function(prev_distance, next_distance):
     reward = change_in_distance * REWARD_PER_DISTANCE
     return reward
     
+def value_function():
+    pass
+
 def q_value_function():
     pass
     
