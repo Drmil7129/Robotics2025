@@ -29,14 +29,18 @@ def robot_set_speed(left,right):
        motors[i + 4].setVelocity(right)
        
 
-def reward_function(prev_distance, next_distance):
-    change_in_distance = math.sqrt((prev_distance[0] - next_distance[0])**2 + (prev_distance[1] - next_distance[1])**2)
-    reward = change_in_distance * REWARD_PER_DISTANCE
-    return reward
-    
-def q_value_function():
-    pass
-    
+#0 is foward, 1 is turn left, 2 is turn right, 3 is backwards
+def index_to_action(index):
+    if (index == 0):
+        robot_set_speed(MAX_SPEED, MAX_SPEED)
+    elif(index = =1)
+        robot_set_speed( -1 * MAX_SPEED, MAX_SPEED)
+    elif(index = =2)
+        robot_set_speed( MAX_SPEED, -1 *  MAX_SPEED)
+    elif(index = =3)
+        robot_set_speed( -1 * MAX_SPEED, -1 * MAX_SPEED)
+
+
 def run_autopilot():
     speeds = [0.0, 0.0]
     speeds[0] = MAX_SPEED
