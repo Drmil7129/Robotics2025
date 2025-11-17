@@ -5,5 +5,5 @@ sceneTreePerspectives: 000000ff000000010000000300000022000000c0000000fa010000000
 maximizedDockId: -1
 centralWidgetVisible: 1
 orthographicViewHeight: 1
-textFiles: 1 "controllers/templateController/templateController.c" "controllers/mainController/mainController.py"
+textFiles: 0 "../../../../../../../Desktop/project/Robotics2025/controllers/mainController/mainController.py"
 consoles: Console:All:All
