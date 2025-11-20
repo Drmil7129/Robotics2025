@@ -2,16 +2,12 @@
 import math
 
 # ---- Map / sensor assumptions (Mohammed) ----
-# Front wall in +X direction
-WALL_X = 10.0               # x-position of the front wall
+WALL_X = 10.0              # front wall x-position
+WALL_Y_LEFT = -40.0        # left wall y-position
+WALL_Y_RIGHT = -50.0       # right wall y-position
 
-# Side walls in Y
-WALL_Y_LEFT = -40.0         # y-position of the LEFT wall
-WALL_Y_RIGHT = -50.0        # y-position of the RIGHT wall
-
-# Distance sensor characteristics
-SENSOR_MAX_RANGE_M = 10.0   # meters (matches DistanceSensor.lookupTable)
-SENSOR_MAX_RAW = 1000.0     # raw value at max range
+SENSOR_MAX_RANGE_M = 10.0  # meters (matches DistanceSensor lookupTable)
+SENSOR_MAX_RAW = 1000.0    # raw value at max range
 
 # Names of the distance sensors on Moose
 SENSOR_NAMES = ["ds_front", "ds_left", "ds_right"]
@@ -45,12 +41,12 @@ def read_sensors(distance_sensors):
     return readings
 
 
-# -------------------- Simple likelihood (debug) -------------------- #
+# ---------- simple debugging likelihood (per sensor only) ----------
 
 def simple_likelihood(distance: float) -> float:
     """
     Simple placeholder likelihood based only on the measured distance.
-    Still useful for debugging and quick sanity checks.
+    (Still useful for debugging.)
     """
     if distance <= 0:
         return 0.0
@@ -68,7 +64,7 @@ def compute_simple_likelihoods(readings):
     return {name: simple_likelihood(val) for name, val in readings.items()}
 
 
-# -------------------- Geometry: expected distances -------------------- #
+# ---------- expected distances from map + GPS (true pose for now) ----------
 
 def expected_front_distance_from_wall_m(gps):
     """
@@ -76,44 +72,42 @@ def expected_front_distance_from_wall_m(gps):
     assuming a vertical wall at x = WALL_X.
     """
     x, y, z = gps.getValues()
-    dist = WALL_X - x
-    if dist < 0.0:
+    dist = WALL_X - x   # front wall is in +x direction
+    if dist < 0:
         dist = 0.0  # robot has passed the wall
     return min(dist, SENSOR_MAX_RANGE_M)
 
 
-def expected_left_distance_m(gps):
+def expected_left_distance_from_wall_m(gps):
     """
-    Expected distance to the LEFT wall (at WALL_Y_LEFT).
-    Robot is between the two walls in Y, so left wall is at higher Y (-40).
+    Expected LEFT sensor distance (ds_left), pointing +y, to wall at y = WALL_Y_LEFT.
     """
     x, y, z = gps.getValues()
-    # Distance from robot to left wall along +Y
-    dist = y - WALL_Y_LEFT        # e.g. y = -45, WALL_Y_LEFT = -40 -> dist = -5 -> clamp to 0
-    if dist < 0.0:
-        dist = 0.0
+    # Robot is at smaller y (~-45), wall at larger y (-40), so free space is wall - robot
+    dist = WALL_Y_LEFT - y
+    if dist < 0:
+        dist = 0.0  # robot is already beyond the wall on +y side
     return min(dist, SENSOR_MAX_RANGE_M)
 
 
-def expected_right_distance_m(gps):
+def expected_right_distance_from_wall_m(gps):
     """
-    Expected distance to the RIGHT wall (at WALL_Y_RIGHT).
-    Right wall is at lower Y (-50).
+    Expected RIGHT sensor distance (ds_right), pointing -y, to wall at y = WALL_Y_RIGHT.
     """
     x, y, z = gps.getValues()
-    # Distance from robot to right wall along -Y
-    dist = WALL_Y_RIGHT - y       # e.g. WALL_Y_RIGHT = -50, y = -45 -> dist = -5 -> clamp to 0
-    if dist < 0.0:
-        dist = 0.0
+    # Wall is at smaller y (-50), sensor looks -y, free space is robot - wall
+    dist = y - WALL_Y_RIGHT
+    if dist < 0:
+        dist = 0.0  # robot is beyond the wall on -y side
     return min(dist, SENSOR_MAX_RANGE_M)
 
 
-# -------------------- Conversions + Gaussian model -------------------- #
+# ---------- conversion + Gaussian likelihood ----------
 
 def distance_m_to_raw(dist_m):
     """
-    Convert distance in meters to raw sensor units (0..SENSOR_MAX_RAW),
-    assuming a linear mapping (matches DistanceSensor.lookupTable).
+    Convert distance in meters to the raw sensor units (0..SENSOR_MAX_RAW),
+    assuming linear mapping (matches DistanceSensor lookupTable).
     """
     d = max(0.0, min(dist_m, SENSOR_MAX_RANGE_M))
     return (d / SENSOR_MAX_RANGE_M) * SENSOR_MAX_RAW
@@ -121,21 +115,14 @@ def distance_m_to_raw(dist_m):
 
 def gaussian_likelihood(error, sigma):
     """Gaussian likelihood p(z | x) ∝ exp(-(error^2)/(2σ^2))."""
-    return math.exp(-(error ** 2) / (2.0 * sigma ** 2))
+    return math.exp(-(error ** 2) / (2 * sigma ** 2))
 
 
-# -------------------- Full likelihoods for each sensor -------------------- #
+# ---------- full measurement models per sensor ----------
 
 def compute_front_likelihood(readings, gps, sigma=100.0):
     """
-    Compute a proper measurement likelihood for the FRONT sensor:
-
-      - uses map (WALL_X) + GPS to get expected distance,
-      - converts to raw units,
-      - compares with measured raw,
-      - returns a dict with all useful values.
-
-    Returns None if 'ds_front' is not present.
+    Proper measurement likelihood for the front sensor.
     """
     z_front = readings.get("ds_front")
     if z_front is None:
@@ -157,14 +144,13 @@ def compute_front_likelihood(readings, gps, sigma=100.0):
 
 def compute_left_likelihood(readings, gps, sigma=100.0):
     """
-    Measurement likelihood for the LEFT sensor 'ds_left'.
-    Uses WALL_Y_LEFT and GPS.y.
+    Proper measurement likelihood for the LEFT sensor.
     """
     z_left = readings.get("ds_left")
     if z_left is None:
         return None
 
-    dist_expected_m = expected_left_distance_m(gps)
+    dist_expected_m = expected_left_distance_from_wall_m(gps)
     z_expected_raw = distance_m_to_raw(dist_expected_m)
 
     error = z_left - z_expected_raw
@@ -180,14 +166,13 @@ def compute_left_likelihood(readings, gps, sigma=100.0):
 
 def compute_right_likelihood(readings, gps, sigma=100.0):
     """
-    Measurement likelihood for the RIGHT sensor 'ds_right'.
-    Uses WALL_Y_RIGHT and GPS.y.
+    Proper measurement likelihood for the RIGHT sensor.
     """
     z_right = readings.get("ds_right")
     if z_right is None:
         return None
 
-    dist_expected_m = expected_right_distance_m(gps)
+    dist_expected_m = expected_right_distance_from_wall_m(gps)
     z_expected_raw = distance_m_to_raw(dist_expected_m)
 
     error = z_right - z_expected_raw
@@ -198,18 +183,4 @@ def compute_right_likelihood(readings, gps, sigma=100.0):
         "expected_raw": z_expected_raw,
         "error": error,
         "likelihood": lik,
-    }
-
-
-# -------------------- Optional helper: all three at once -------------------- #
-
-def compute_all_likelihoods(readings, gps, sigma=100.0):
-    """
-    Convenience function to compute likelihood summaries for all three sensors.
-    Returns a dict: sensor_name -> likelihood_info_dict (or None if missing).
-    """
-    return {
-        "front": compute_front_likelihood(readings, gps, sigma),
-        "left": compute_left_likelihood(readings, gps, sigma),
-        "right": compute_right_likelihood(readings, gps, sigma),
     }
