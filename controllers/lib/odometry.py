@@ -25,8 +25,8 @@ class OdometryConfiguration:
     
 class OdometryState:
     def __init__(self):
-        self.pos_left_prev = 0
-        self.pos_right_prev = 0
+        self.pos_left_prev = []
+        self.pos_right_prev = []
 
 
 class OdometryResult:
@@ -47,15 +47,32 @@ class Odometry:
         self.result.y = 0.0
         self.result.theta = 0.0
 
-        self.state.pos_left_prev = pos_left
-        self.state.pos_right_prev = pos_right
+        self.state.pos_left_prev = list(pos_left)
+        self.state.pos_right_prev = list(pos_right)
 
-    def update(self, pos_left, pos_right):
-        delta_pos_left = pos_left - self.state.pos_left_prev
-        delta_pos_right = pos_right - self.state.pos_right_prev
+    def update(self, pos_left_list, pos_right_list):
 
-        delta_left = delta_pos_left * self.config.wheel_conversion_left
-        delta_right = delta_pos_right * self.config.wheel_conversion_right
+        if len(pos_left_list) != len(self.state.pos_left_prev) or \
+           len(pos_right_list) != len(self.state.pos_right_prev):
+            raise ValueError("Number of wheels provided does not match start_pos configuration")
+        
+        deltas_pos_right = []
+        for i, current_pos in enumerate(pos_right_list):
+            delta = current_pos - self.state.pos_right_prev[i]
+            deltas_pos_right.append(delta)
+
+    
+        deltas_pos_left = []
+        for i, current_pos in enumerate(pos_left_list):
+            delta = current_pos - self.state.pos_left_prev[i]
+            deltas_pos_left.append(delta)
+
+        avg_delta_pos_left = sum(deltas_pos_left) / len(deltas_pos_left)
+        avg_delta_pos_right = sum(deltas_pos_right) / len(deltas_pos_right)
+
+        
+        delta_left = avg_delta_pos_left * self.config.wheel_conversion_left
+        delta_right = avg_delta_pos_right * self.config.wheel_conversion_right
 
         delta_theta = (delta_right - delta_left) / self.config.wheel_distance
         theta2 = self.result.theta + delta_theta / 2.0
@@ -72,6 +89,6 @@ class Odometry:
         elif self.result.theta < -PI:
             self.result.theta += 2 * PI
 
-        self.state.pos_left_prev = pos_left
-        self.state.pos_right_prev = pos_right
+        self.state.pos_left_prev = list(pos_left_list)
+        self.state.pos_right_prev = list(pos_right_list)
 
