@@ -144,6 +144,8 @@ class Odometry:
         elif self.result.theta < -PI:
             self.result.theta += 2 * PI
 
+        self.particles = self.motion_model.prediction_step(delta_dist, delta_theta)    
+
         self.state.pos_left_prev = list(pos_left_list)
         self.state.pos_right_prev = list(pos_right_list)
 
