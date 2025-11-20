@@ -1,7 +1,7 @@
 # localisation.py
 import math
 
-# ---- Map / sensor assumptions (Mohammed) ----
+# ---- Map / sensor assumptions ----
 WALL_X = 10.0              # front wall x-position
 WALL_Y_LEFT = -40.0        # left wall y-position
 WALL_Y_RIGHT = -50.0       # right wall y-position
@@ -16,10 +16,6 @@ SENSOR_NAMES = ["ds_front", "ds_left", "ds_right"]
 # ================== DEVICE INITIALISATION / READING ==================
 
 def init_distance_sensors(robot, timestep):
-    """
-    Initialise all distance sensors defined in SENSOR_NAMES.
-    Returns a dict: name -> DistanceSensor device.
-    """
     distance_sensors = {}
     for sname in SENSOR_NAMES:
         dev = robot.getDevice(sname)
@@ -33,10 +29,6 @@ def init_distance_sensors(robot, timestep):
 
 
 def read_sensors(distance_sensors):
-    """
-    Read raw values from all distance sensors.
-    Returns: dict name -> raw_value.
-    """
     readings = {}
     for name, sensor in distance_sensors.items():
         readings[name] = sensor.getValue()
@@ -46,10 +38,6 @@ def read_sensors(distance_sensors):
 # ================== SIMPLE (DEBUG) LIKELIHOODS ==================
 
 def simple_likelihood(distance: float) -> float:
-    """
-    Simple placeholder likelihood based only on the measured distance.
-    Still useful for debugging.
-    """
     if distance <= 0:
         return 0.0
 
@@ -59,45 +47,31 @@ def simple_likelihood(distance: float) -> float:
 
 
 def compute_simple_likelihoods(readings):
-    """
-    Compute simple_likelihood for each sensor based on its raw reading.
-    Returns: dict name -> likelihood.
-    """
     return {name: simple_likelihood(val) for name, val in readings.items()}
 
 
 # ================== GEOMETRY: EXPECTED DISTANCES (POSE-BASED) ==================
 
 def expected_front_distance_from_wall_m_pose(x, y, theta):
-    """
-    Expected FRONT distance (METERS) for a particle pose (x, y, theta),
-    assuming a vertical wall at x = WALL_X and the front sensor pointing +x.
-    """
+
     dist = WALL_X - x
     if dist < 0:
-        dist = 0.0  # particle is beyond the wall
+        dist = 0.0 
     return min(dist, SENSOR_MAX_RANGE_M)
 
 
 def expected_left_distance_from_wall_m_pose(x, y, theta):
-    """
-    Expected LEFT distance (METERS) for a particle pose (x, y, theta),
-    assuming a vertical wall at y = WALL_Y_LEFT and left sensor pointing +y.
-    """
+
     dist = WALL_Y_LEFT - y
     if dist < 0:
-        dist = 0.0  # particle is left of the wall
+        dist = 0.0 
     return min(dist, SENSOR_MAX_RANGE_M)
 
 
 def expected_right_distance_from_wall_m_pose(x, y, theta):
-    """
-    Expected RIGHT distance (METERS) for a particle pose (x, y, theta),
-    assuming a vertical wall at y = WALL_Y_RIGHT and right sensor pointing -y.
-    """
     dist = y - WALL_Y_RIGHT
     if dist < 0:
-        dist = 0.0  # particle is right of the wall
+        dist = 0.0  
     return min(dist, SENSOR_MAX_RANGE_M)
 
 
@@ -121,16 +95,11 @@ def expected_right_distance_from_wall_m(gps):
 # ================== RAW / METERS CONVERSION + GAUSSIAN ==================
 
 def distance_m_to_raw(dist_m):
-    """
-    Convert distance in meters to the raw sensor units (0..SENSOR_MAX_RAW),
-    assuming linear mapping (matches DistanceSensor lookupTable).
-    """
     d = max(0.0, min(dist_m, SENSOR_MAX_RANGE_M))
     return (d / SENSOR_MAX_RANGE_M) * SENSOR_MAX_RAW
 
 
 def gaussian_likelihood(error, sigma):
-    """Gaussian likelihood p(z | x) ∝ exp(-(error^2)/(2σ^2))."""
     return math.exp(-(error ** 2) / (2 * sigma ** 2))
 
 
@@ -223,10 +192,6 @@ def compute_right_likelihood(readings, gps, sigma=100.0):
 # ================== COMBINED SENSOR WEIGHT ==================
 
 def combined_weight(front_info, left_info, right_info):
-    """
-    Multiply the three sensor likelihoods into a single measurement weight.
-    Any sensor with None info is skipped.
-    """
     w = 1.0
     if front_info is not None:
         w *= front_info["likelihood"]
