@@ -1,4 +1,5 @@
 import math
+import random
 
 PI = math.pi
 
@@ -7,6 +8,57 @@ axis_wheel_ratio = 1.4134
 wheel_diameter_left = 0.0416
 wheel_diameter_right = 0.0404
 scaling_factor = 0.976
+
+class Particle:
+    def __init__(self, x=0.0, y=0.0, theta=0.0, weight=1.0):
+        self.x = x
+        self.y = y
+        self.theta = theta
+        self.weight = weight
+
+class ProbabilisticMotionModel:
+    def __init__(self, num_particles, start_x, start_y, start_theta):
+        self.num_particles = num_particles
+        
+        self.particles = [
+            Particle(start_x, start_y, start_theta, 1.0 / num_particles) 
+            for _ in range(num_particles)
+        ]
+
+       
+        self.alpha1 = 0.1  # Rotation error due to rotation
+        self.alpha2 = 0.05 # Rotation error due to translation
+        self.alpha3 = 0.1  # Translation error due to translation
+        self.alpha4 = 0.05 # Translation error due to rotation
+
+    def sample_gaussian(self, variance):
+        if variance <= 0: return 0
+        return random.gauss(0, math.sqrt(variance))
+
+    def prediction_step(self, delta_dist, delta_theta):
+   
+        for p in self.particles:
+    
+            rot_noise_variance = (self.alpha1 * abs(delta_theta) + 
+                                  self.alpha2 * abs(delta_dist))
+            
+            trans_noise_variance = (self.alpha3 * abs(delta_dist) + 
+                                    self.alpha4 * abs(delta_theta))
+
+            sampled_rot = delta_theta + self.sample_gaussian(rot_noise_variance)
+            sampled_dist = delta_dist + self.sample_gaussian(trans_noise_variance)
+
+  
+            p.x += sampled_dist * math.cos(p.theta + sampled_rot / 2.0)
+            p.y += sampled_dist * math.sin(p.theta + sampled_rot / 2.0)
+            p.theta += sampled_rot
+
+            if p.theta > PI:
+                p.theta -= 2 * PI
+            elif p.theta < -PI:
+                p.theta += 2 * PI
+        
+        return self.particles
 
 class OdometryConfiguration:
     def __init__(self):
@@ -42,6 +94,8 @@ class Odometry:
         self.state = OdometryState()
         self.result = OdometryResult()
 
+        self.motion_model = ProbabilisticMotionModel(100, 0.0, 0.0, 0.0)
+
     def start_pos(self, pos_left, pos_right):
         self.result.x = 0.0
         self.result.y = 0.0
@@ -69,6 +123,7 @@ class Odometry:
 
         avg_delta_pos_left = sum(deltas_pos_left) / len(deltas_pos_left)
         avg_delta_pos_right = sum(deltas_pos_right) / len(deltas_pos_right)
+        delta_dist = (delta_right + delta_left) / 2.0
 
         
         delta_left = avg_delta_pos_left * self.config.wheel_conversion_left
