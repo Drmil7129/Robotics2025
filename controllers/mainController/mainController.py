@@ -1,11 +1,13 @@
 """mainController controller."""
 
-# You may need to import some classes of the controller module. Ex:
-#  from controller import Robot, Motor, DistanceSensor
+from controller import Robot, Motor
+import sys, os
 
-from controller import Robot,Motor
-import math
-import numpy as np
+# Make sure we can import from ../lib/
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
+
+import localisation   # Now this works
+
 
 
 class RobotState:
@@ -16,14 +18,17 @@ class RobotState:
         self.has_cargo = has_cargo
         
     def __repr__(self):
-        return f"RobotState(x={self.position_x}, y={self.position_y}, heading={self.heading}, cargo={self.has_cargo})"
+        return (
+            f"RobotState(x={self.position_x}, y={self.position_y}, "
+            f"heading={self.heading}, cargo={self.has_cargo})"
+        )
+
 
 ROBOT_ACTIONS = {
     'FORWARD': 0,
     'LEFT': 1,
     'RIGHT': 2,
-    'STOP': 3
-}
+    'STOP': 3,
 }
 
 TIME_STEP = 16
@@ -34,58 +39,91 @@ TURN_COEFFICIENT = 4.0
 REWARD_PER_DISTANCE = 1
 NUM_OF_STATES = 2500
 NUM_OF_ACTIONS = 6
-Q_table = np.zeros(NUM_OF_STATES,NUM_OF_ACTIONS)
 
-
+# ❗ Only ONE Robot() instance, created at module level
 autopilot = True
 robot = Robot()
+timestep = int(robot.getBasicTimeStep())
+
 actions = []
 motors = []
 
-def robot_set_speed(left,right):
-  for i in range(4):
-       motors[i + 0].setVelocity(left)
-       motors[i + 4].setVelocity(right)
-       
 
-#0 is foward, 1 is turn left, 2 is turn right, 3 is backwards
+def robot_set_speed(left, right):
+    for i in range(4):
+        motors[i + 0].setVelocity(left)
+        motors[i + 4].setVelocity(right)
+
+
+# 0 is forward, 1 is turn left, 2 is turn right, 3 is backwards
 def index_to_action(index):
-    if (index == 0):
+    if index == 0:
         robot_set_speed(MAX_SPEED, MAX_SPEED)
-    elif(index = =1)
-        robot_set_speed( -1 * MAX_SPEED, MAX_SPEED)
-    elif(index = =2)
-        robot_set_speed( MAX_SPEED, -1 *  MAX_SPEED)
-    elif(index = =3)
-        robot_set_speed( -1 * MAX_SPEED, -1 * MAX_SPEED)
+    elif index == 1:
+        robot_set_speed(-1 * MAX_SPEED, MAX_SPEED)
+    elif index == 2:
+        robot_set_speed(MAX_SPEED, -1 * MAX_SPEED)
+    elif index == 3:
+        robot_set_speed(-1 * MAX_SPEED, -1 * MAX_SPEED)
+    # indices 4,5 can be defined later (e.g. STOP, slow forward, etc.)
 
 
 def run_autopilot():
-    speeds = [0.0, 0.0]
-    speeds[0] = MAX_SPEED
-    speeds[1] = MAX_SPEED
+    speeds = [MAX_SPEED, MAX_SPEED]
     robot_set_speed(speeds[0], speeds[1])
- 
-# get the time step of the current world.
-timestep = int(robot.getBasicTimeStep())
 
-# You should insert a getDevice-like function in order to get the
-# instance of a device of the robot. Something like:
-#  motor = robot.getDevice('motorname')
-#  ds = robot.getDevice('dsname')
-#  ds.enable(timestep)
 
 def main():
-    names = ["left motor 1",  "left motor 2",  "left motor 3",  "left motor 4",
-             "right motor 1", "right motor 2", "right motor 3", "right motor 4"]
+    # --- initialise motors ---
+    names = [
+        "left motor 1", "left motor 2", "left motor 3", "left motor 4",
+        "right motor 1", "right motor 2", "right motor 3", "right motor 4",
+    ]
     for name in names:
         motor = robot.getDevice(name)
         motor.setPosition(float('inf'))
+        motor.setVelocity(0.0)
         motors.append(motor)
-        
+
+    # --- DEBUG: list all devices on the robot ---
+    print("=== Devices on robot ===")
+    for i in range(robot.getNumberOfDevices()):
+        dev = robot.getDeviceByIndex(i)
+        print(f"- {dev.getName()}")
+    print("========================")
+
+    # --- Mohammed: initialise distance sensors via localisation module ---
+    distance_sensors = localisation.init_distance_sensors(robot, timestep)
+
+    # --- GPS for expected measurement model (temporarily using true pose) ---
+    gps = robot.getDevice("gps")
+    gps.enable(timestep)
+
+    # --- main loop ---
     while robot.step(timestep) != -1:
-        if (autopilot):
+        if autopilot:
             run_autopilot()
+        # later RL can call index_to_action(best_action_index)
+
+        # Mohammed: read sensors
+        readings = localisation.read_sensors(distance_sensors)
+        print("Readings:", readings)
+
+        # Optional: simple per-sensor likelihoods (debug)
+        simple_liks = localisation.compute_simple_likelihoods(readings)
+        print("Simple likelihoods:", simple_liks)
+
+        # Proper front sensor p(z|x) using the map + GPS
+        front_info = localisation.compute_front_likelihood(readings, gps, sigma=100.0)
+        if front_info is not None:
+            print(
+                "[Front likelihood] "
+                f"measured_raw={front_info['measured_raw']:.1f}, "
+                f"expected_raw={front_info['expected_raw']:.1f}, "
+                f"error={front_info['error']:.1f}, "
+                f"likelihood={front_info['likelihood']:.4f}"
+            )
+
 
 if __name__ == "__main__":
     main()
