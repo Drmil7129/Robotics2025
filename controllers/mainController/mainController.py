@@ -40,6 +40,7 @@ autopilot = True
 robot = Robot()
 actions = []
 motors = []
+position_sensors = []
 
 def robot_set_speed(left,right):
   for i in range(4):
@@ -51,11 +52,11 @@ def robot_set_speed(left,right):
 def index_to_action(index):
     if (index == 0):
         robot_set_speed(MAX_SPEED, MAX_SPEED)
-    elif(index = =1)
+    elif(index == 1):
         robot_set_speed( -1 * MAX_SPEED, MAX_SPEED)
-    elif(index = =2)
+    elif(index == 2):
         robot_set_speed( MAX_SPEED, -1 *  MAX_SPEED)
-    elif(index = =3)
+    elif(index == 3):
         robot_set_speed( -1 * MAX_SPEED, -1 * MAX_SPEED)
 
 
@@ -81,6 +82,12 @@ def main():
         motor = robot.getDevice(name)
         motor.setPosition(float('inf'))
         motors.append(motor)
+    
+    for motor in motors:
+        possition_sensor = motor.getPositionSensor()
+        possition_sensor.enable(timestep)
+        position_sensors.append(possition_sensor)
+        
         
     while robot.step(timestep) != -1:
         if (autopilot):
