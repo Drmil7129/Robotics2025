@@ -18,14 +18,7 @@ class Particle:
 
 class ProbabilisticMotionModel:
     def __init__(self, num_particles, start_x, start_y, start_theta):
-        self.num_particles = num_particles
-        
-        self.particles = [
-            Particle(start_x, start_y, start_theta, 1.0 / num_particles) 
-            for _ in range(num_particles)
-        ]
-
-       
+      
         self.alpha1 = 0.1  # Rotation error due to rotation
         self.alpha2 = 0.05 # Rotation error due to translation
         self.alpha3 = 0.1  # Translation error due to translation
@@ -35,9 +28,9 @@ class ProbabilisticMotionModel:
         if variance <= 0: return 0
         return random.gauss(0, math.sqrt(variance))
 
-    def prediction_step(self, delta_dist, delta_theta):
+    def prediction_step(self, particles, delta_dist, delta_theta):
    
-        for p in self.particles:
+        for p in particles:
     
             rot_noise_variance = (self.alpha1 * abs(delta_theta) + 
                                   self.alpha2 * abs(delta_dist))
@@ -58,7 +51,7 @@ class ProbabilisticMotionModel:
             elif p.theta < -PI:
                 p.theta += 2 * PI
         
-        return self.particles
+        return particles
 
 class OdometryConfiguration:
     def __init__(self):
@@ -96,6 +89,12 @@ class Odometry:
 
         self.motion_model = ProbabilisticMotionModel(100, 0.0, 0.0, 0.0)
 
+        self.num_particles = 100
+        self.particles = [
+            Particle(0.0, 0.0, 0.0, 1.0 / self.num_particles) 
+            for _ in range(self.num_particles)
+        ]
+
     def start_pos(self, pos_left, pos_right):
         self.result.x = 0.0
         self.result.y = 0.0
@@ -103,6 +102,11 @@ class Odometry:
 
         self.state.pos_left_prev = list(pos_left)
         self.state.pos_right_prev = list(pos_right)
+
+        self.particles = [
+            Particle(0.0, 0.0, 0.0, 1.0 / self.num_particles) 
+            for _ in range(self.num_particles)
+        ]
 
     def update(self, pos_left_list, pos_right_list):
 
@@ -123,17 +127,16 @@ class Odometry:
 
         avg_delta_pos_left = sum(deltas_pos_left) / len(deltas_pos_left)
         avg_delta_pos_right = sum(deltas_pos_right) / len(deltas_pos_right)
-        delta_dist = (delta_right + delta_left) / 2.0
 
-        
         delta_left = avg_delta_pos_left * self.config.wheel_conversion_left
         delta_right = avg_delta_pos_right * self.config.wheel_conversion_right
+        delta_dist = (delta_right + delta_left) / 2.0
 
         delta_theta = (delta_right - delta_left) / self.config.wheel_distance
         theta2 = self.result.theta + delta_theta / 2.0
 
-        delta_x = (delta_right + delta_left) / 2.0 * math.cos(theta2)
-        delta_y = (delta_right + delta_left) / 2.0 * math.sin(theta2)
+        delta_x = delta_dist * math.cos(theta2)
+        delta_y = delta_dist * math.sin(theta2)
 
         self.result.x += delta_x
         self.result.y += delta_y
@@ -144,7 +147,7 @@ class Odometry:
         elif self.result.theta < -PI:
             self.result.theta += 2 * PI
 
-        self.particles = self.motion_model.prediction_step(delta_dist, delta_theta)    
+        self.particles = self.motion_model.prediction_step(self.particles, delta_dist, delta_theta)    
 
         self.state.pos_left_prev = list(pos_left_list)
         self.state.pos_right_prev = list(pos_right_list)
