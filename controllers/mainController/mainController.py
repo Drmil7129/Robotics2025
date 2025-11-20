@@ -3,7 +3,7 @@
 from controller import Robot, Motor
 import sys, os
 
-# Make sure we can import from ../lib/
+# Allow imports from ../lib/
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
 import localisation   # Mohammed's localisation module
 
@@ -53,7 +53,7 @@ def robot_set_speed(left, right):
         motors[i + 4].setVelocity(right)
 
 
-# 0 is forward, 1 is turn left, 2 is turn right, 3 is backwards
+# 0 forward, 1 turn left, 2 turn right, 3 backward
 def index_to_action(index):
     if index == 0:
         robot_set_speed(MAX_SPEED, MAX_SPEED)
@@ -63,7 +63,6 @@ def index_to_action(index):
         robot_set_speed(MAX_SPEED, -MAX_SPEED)
     elif index == 3:
         robot_set_speed(-MAX_SPEED, -MAX_SPEED)
-    # indices 4,5 can be defined later
 
 
 def run_autopilot():
@@ -71,56 +70,53 @@ def run_autopilot():
 
 
 def main():
-    # --- initialise motors ---
+
+    # --- Initialise motors ---
     names = [
-        "left motor 1",
-        "left motor 2",
-        "left motor 3",
-        "left motor 4",
-        "right motor 1",
-        "right motor 2",
-        "right motor 3",
-        "right motor 4",
+        "left motor 1", "left motor 2", "left motor 3", "left motor 4",
+        "right motor 1", "right motor 2", "right motor 3", "right motor 4",
     ]
+
     for name in names:
         motor = robot.getDevice(name)
         motor.setPosition(float("inf"))
         motor.setVelocity(0.0)
         motors.append(motor)
 
-    # --- DEBUG: list all devices on the robot ---
+    # --- DEBUG: list all devices ---
     print("=== Devices on robot ===")
     for i in range(robot.getNumberOfDevices()):
         dev = robot.getDeviceByIndex(i)
         print(f"- {dev.getName()}")
     print("========================")
 
-    # --- Mohammed: initialise distance sensors via localisation module ---
+    # --- Mohammed: initialise distance sensors ---
     distance_sensors = localisation.init_distance_sensors(robot, timestep)
 
-    # --- GPS for expected measurement model (temporarily using true pose) ---
+    # --- GPS for temporary truth-based expected measurement ---
     gps = robot.getDevice("gps")
     gps.enable(timestep)
 
-    # --- main loop ---
+    # ==================== MAIN LOOP ====================
     while robot.step(timestep) != -1:
+
         if autopilot:
             run_autopilot()
-        # later RL can call index_to_action(best_action_index)
 
         # 1) Read raw sensors
         readings = localisation.read_sensors(distance_sensors)
         print("Readings:", readings)
 
-        # 2) Optional simple per-sensor likelihoods (debug)
+        # 2) Simple debug likelihoods
         simple_liks = localisation.compute_simple_likelihoods(readings)
         print("Simple likelihoods:", simple_liks)
 
-        # 3) Proper p(z | x) for each sensor using map + GPS
+        # 3) Full likelihoods using map + GPS (temporary: true pose)
         front_info = localisation.compute_front_likelihood(readings, gps, sigma=100.0)
-        left_info = localisation.compute_left_likelihood(readings, gps, sigma=100.0)
+        left_info  = localisation.compute_left_likelihood(readings, gps, sigma=100.0)
         right_info = localisation.compute_right_likelihood(readings, gps, sigma=100.0)
 
+        # --- Print individual sensor models ---
         if front_info is not None:
             print(
                 "[Front likelihood] "
@@ -147,6 +143,10 @@ def main():
                 f"error={right_info['error']:.1f}, "
                 f"likelihood={right_info['likelihood']:.4f}"
             )
+
+        # --- NEW: Print total combined weight ---
+        total_w = localisation.combined_weight(front_info, left_info, right_info)
+        print(f"[Total measurement weight] w = {total_w:.4f}")
 
 
 if __name__ == "__main__":

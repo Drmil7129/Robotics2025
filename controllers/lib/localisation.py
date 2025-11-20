@@ -13,6 +13,8 @@ SENSOR_MAX_RAW = 1000.0    # raw value at max range
 SENSOR_NAMES = ["ds_front", "ds_left", "ds_right"]
 
 
+# ================== DEVICE INITIALISATION / READING ==================
+
 def init_distance_sensors(robot, timestep):
     """
     Initialise all distance sensors defined in SENSOR_NAMES.
@@ -41,12 +43,12 @@ def read_sensors(distance_sensors):
     return readings
 
 
-# ---------- simple debugging likelihood (per sensor only) ----------
+# ================== SIMPLE (DEBUG) LIKELIHOODS ==================
 
 def simple_likelihood(distance: float) -> float:
     """
     Simple placeholder likelihood based only on the measured distance.
-    (Still useful for debugging.)
+    Still useful for debugging.
     """
     if distance <= 0:
         return 0.0
@@ -64,45 +66,59 @@ def compute_simple_likelihoods(readings):
     return {name: simple_likelihood(val) for name, val in readings.items()}
 
 
-# ---------- expected distances from map + GPS (true pose for now) ----------
+# ================== GEOMETRY: EXPECTED DISTANCES (POSE-BASED) ==================
+
+def expected_front_distance_from_wall_m_pose(x, y, theta):
+    """
+    Expected FRONT distance (METERS) for a particle pose (x, y, theta),
+    assuming a vertical wall at x = WALL_X and the front sensor pointing +x.
+    """
+    dist = WALL_X - x
+    if dist < 0:
+        dist = 0.0  # particle is beyond the wall
+    return min(dist, SENSOR_MAX_RANGE_M)
+
+
+def expected_left_distance_from_wall_m_pose(x, y, theta):
+    """
+    Expected LEFT distance (METERS) for a particle pose (x, y, theta),
+    assuming a vertical wall at y = WALL_Y_LEFT and left sensor pointing +y.
+    """
+    dist = WALL_Y_LEFT - y
+    if dist < 0:
+        dist = 0.0  # particle is left of the wall
+    return min(dist, SENSOR_MAX_RANGE_M)
+
+
+def expected_right_distance_from_wall_m_pose(x, y, theta):
+    """
+    Expected RIGHT distance (METERS) for a particle pose (x, y, theta),
+    assuming a vertical wall at y = WALL_Y_RIGHT and right sensor pointing -y.
+    """
+    dist = y - WALL_Y_RIGHT
+    if dist < 0:
+        dist = 0.0  # particle is right of the wall
+    return min(dist, SENSOR_MAX_RANGE_M)
+
+
+# ---------- GPS wrappers (for debugging with true pose) ----------
 
 def expected_front_distance_from_wall_m(gps):
-    """
-    Expected front sensor distance in METERS given the true pose from GPS,
-    assuming a vertical wall at x = WALL_X.
-    """
     x, y, z = gps.getValues()
-    dist = WALL_X - x   # front wall is in +x direction
-    if dist < 0:
-        dist = 0.0  # robot has passed the wall
-    return min(dist, SENSOR_MAX_RANGE_M)
+    return expected_front_distance_from_wall_m_pose(x, y, 0.0)
 
 
 def expected_left_distance_from_wall_m(gps):
-    """
-    Expected LEFT sensor distance (ds_left), pointing +y, to wall at y = WALL_Y_LEFT.
-    """
     x, y, z = gps.getValues()
-    # Robot is at smaller y (~-45), wall at larger y (-40), so free space is wall - robot
-    dist = WALL_Y_LEFT - y
-    if dist < 0:
-        dist = 0.0  # robot is already beyond the wall on +y side
-    return min(dist, SENSOR_MAX_RANGE_M)
+    return expected_left_distance_from_wall_m_pose(x, y, 0.0)
 
 
 def expected_right_distance_from_wall_m(gps):
-    """
-    Expected RIGHT sensor distance (ds_right), pointing -y, to wall at y = WALL_Y_RIGHT.
-    """
     x, y, z = gps.getValues()
-    # Wall is at smaller y (-50), sensor looks -y, free space is robot - wall
-    dist = y - WALL_Y_RIGHT
-    if dist < 0:
-        dist = 0.0  # robot is beyond the wall on -y side
-    return min(dist, SENSOR_MAX_RANGE_M)
+    return expected_right_distance_from_wall_m_pose(x, y, 0.0)
 
 
-# ---------- conversion + Gaussian likelihood ----------
+# ================== RAW / METERS CONVERSION + GAUSSIAN ==================
 
 def distance_m_to_raw(dist_m):
     """
@@ -118,17 +134,14 @@ def gaussian_likelihood(error, sigma):
     return math.exp(-(error ** 2) / (2 * sigma ** 2))
 
 
-# ---------- full measurement models per sensor ----------
+# ================== POSE-BASED MEASUREMENT MODELS ==================
 
-def compute_front_likelihood(readings, gps, sigma=100.0):
-    """
-    Proper measurement likelihood for the front sensor.
-    """
+def compute_front_likelihood_from_pose(readings, x, y, theta, sigma=100.0):
     z_front = readings.get("ds_front")
     if z_front is None:
         return None
 
-    dist_expected_m = expected_front_distance_from_wall_m(gps)
+    dist_expected_m = expected_front_distance_from_wall_m_pose(x, y, theta)
     z_expected_raw = distance_m_to_raw(dist_expected_m)
 
     error = z_front - z_expected_raw
@@ -142,15 +155,12 @@ def compute_front_likelihood(readings, gps, sigma=100.0):
     }
 
 
-def compute_left_likelihood(readings, gps, sigma=100.0):
-    """
-    Proper measurement likelihood for the LEFT sensor.
-    """
+def compute_left_likelihood_from_pose(readings, x, y, theta, sigma=100.0):
     z_left = readings.get("ds_left")
     if z_left is None:
         return None
 
-    dist_expected_m = expected_left_distance_from_wall_m(gps)
+    dist_expected_m = expected_left_distance_from_wall_m_pose(x, y, theta)
     z_expected_raw = distance_m_to_raw(dist_expected_m)
 
     error = z_left - z_expected_raw
@@ -164,15 +174,12 @@ def compute_left_likelihood(readings, gps, sigma=100.0):
     }
 
 
-def compute_right_likelihood(readings, gps, sigma=100.0):
-    """
-    Proper measurement likelihood for the RIGHT sensor.
-    """
+def compute_right_likelihood_from_pose(readings, x, y, theta, sigma=100.0):
     z_right = readings.get("ds_right")
     if z_right is None:
         return None
 
-    dist_expected_m = expected_right_distance_from_wall_m(gps)
+    dist_expected_m = expected_right_distance_from_wall_m_pose(x, y, theta)
     z_expected_raw = distance_m_to_raw(dist_expected_m)
 
     error = z_right - z_expected_raw
@@ -184,3 +191,47 @@ def compute_right_likelihood(readings, gps, sigma=100.0):
         "error": error,
         "likelihood": lik,
     }
+def combined_weight(front_info, left_info, right_info, eps=1e-9):
+    w = 1.0
+    for info in (front_info, left_info, right_info):
+        if info is None:
+            continue
+        lik = info.get("likelihood", None)
+        if lik is None:
+            continue
+        # clamp to [eps, 1.0] to avoid zeroing everything
+        lik = max(min(lik, 1.0), eps)
+        w *= lik
+    return w
+# ---------- GPS wrappers (keep your current behaviour) ----------
+
+def compute_front_likelihood(readings, gps, sigma=100.0):
+    x, y, z = gps.getValues()
+    return compute_front_likelihood_from_pose(readings, x, y, 0.0, sigma)
+
+
+def compute_left_likelihood(readings, gps, sigma=100.0):
+    x, y, z = gps.getValues()
+    return compute_left_likelihood_from_pose(readings, x, y, 0.0, sigma)
+
+
+def compute_right_likelihood(readings, gps, sigma=100.0):
+    x, y, z = gps.getValues()
+    return compute_right_likelihood_from_pose(readings, x, y, 0.0, sigma)
+
+
+# ================== COMBINED SENSOR WEIGHT ==================
+
+def combined_weight(front_info, left_info, right_info):
+    """
+    Multiply the three sensor likelihoods into a single measurement weight.
+    Any sensor with None info is skipped.
+    """
+    w = 1.0
+    if front_info is not None:
+        w *= front_info["likelihood"]
+    if left_info is not None:
+        w *= left_info["likelihood"]
+    if right_info is not None:
+        w *= right_info["likelihood"]
+    return w
