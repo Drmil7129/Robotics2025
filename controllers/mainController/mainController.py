@@ -1,12 +1,12 @@
 """mainController controller."""
 
 from controller import Robot, Motor
-import sys, os
+import sys, os, random
 
 # Allow imports from ../lib/
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
 import localisation 
-
+import reinforcement_learning as rl
 
 class RobotState:
     def __init__(self, position_x=0.0, position_y=0.0, heading=0.0, has_cargo=True):
@@ -23,17 +23,10 @@ class RobotState:
 
 
 ROBOT_ACTIONS = {
-<<<<<<< HEAD
     "FORWARD": 0,
     "LEFT": 1,
     "RIGHT": 2,
     "STOP": 3,
-=======
-    'FORWARD': 0,
-    'LEFT': 1,
-    'RIGHT': 2,
-    'STOP': 3
->>>>>>> main
 }
 
 TIME_STEP = 16
@@ -51,7 +44,7 @@ timestep = int(robot.getBasicTimeStep())
 
 actions = []
 motors = []
-
+state = [0,0,0]
 
 def robot_set_speed(left, right):
     for i in range(4):
@@ -72,7 +65,19 @@ def index_to_action(index):
 
 def run_autopilot():
     robot_set_speed(MAX_SPEED, MAX_SPEED)
-
+    
+def get_action():
+    index = rl.q_value_action(state)
+    index_to_action(index)
+    return index
+    
+def update_state():
+    global state
+    index = random.randint(0,2)
+    
+    state[index] += 1
+    if (index == 2 and state[index] > 3 or index != 2 and state[index] > 49):
+        state[index] = 0
 
 def main():
 
@@ -91,11 +96,15 @@ def main():
 
     gps = robot.getDevice("gps")
     gps.enable(timestep)
-
+    previous_action = None
+    previous_state = None
     while robot.step(timestep) != -1:
-
-        if autopilot:
-            run_autopilot()
+    
+        if (previous_action != None and previous_state != None):
+            rl.q_value_update(previous_state,state,previous_action)
+        previous_state = state.copy()
+        previous_action = get_action()
+        update_state()
 
         readings = localisation.read_sensors(distance_sensors)
         print("Readings:", readings)
