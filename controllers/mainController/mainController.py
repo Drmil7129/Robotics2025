@@ -1,10 +1,12 @@
 """mainController controller."""
 
-# You may need to import some classes of the controller module. Ex:
-#  from controller import Robot, Motor, DistanceSensor
+from controller import Robot, Motor
+import sys, os, random
 
-from controller import Robot,Motor
-
+# Allow imports from ../lib/
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
+import localisation 
+import reinforcement_learning as rl
 
 class RobotState:
     def __init__(self, position_x=0.0, position_y=0.0, heading=0.0, has_cargo=True):
@@ -12,15 +14,26 @@ class RobotState:
         self.position_y = position_y
         self.heading = heading
         self.has_cargo = has_cargo
-        
+
     def __repr__(self):
-        return f"RobotState(x={self.position_x}, y={self.position_y}, heading={self.heading}, cargo={self.has_cargo})"
+        return (
+            f"RobotState(x={self.position_x}, y={self.position_y}, "
+            f"heading={self.heading}, cargo={self.has_cargo})"
+        )
+
 
 ROBOT_ACTIONS = {
+<<<<<<< HEAD
     'FORWARD': 0,
     'LEFT': 1,
     'RIGHT': 2,
     'STOP': 3
+=======
+    "FORWARD": 0,
+    "LEFT": 1,
+    "RIGHT": 2,
+    "STOP": 3,
+>>>>>>> main
 }
 
 TIME_STEP = 16
@@ -28,46 +41,117 @@ TARGET_POINTS_SIZE = 13
 DISTANCE_TOLERANCE = 1.5
 MAX_SPEED = 7.0
 TURN_COEFFICIENT = 4.0
+REWARD_PER_DISTANCE = 1
+NUM_OF_STATES = 2500
+NUM_OF_ACTIONS = 6
+
 autopilot = True
 robot = Robot()
-actions = []
-motors = []
-
-def robot_set_speed(left,right):
-  for i in range(4):
-       motors[i + 0].setVelocity(left)
-       motors[i + 4].setVelocity(right)
-       
-
-def reward_function():
-    return 0
-    
-def run_autopilot():
-    speeds = [0.0, 0.0]
-    speeds[0] = MAX_SPEED
-    speeds[1] = MAX_SPEED
-    robot_set_speed(speeds[0], speeds[1])
- 
-# get the time step of the current world.
 timestep = int(robot.getBasicTimeStep())
 
-# You should insert a getDevice-like function in order to get the
-# instance of a device of the robot. Something like:
-#  motor = robot.getDevice('motorname')
-#  ds = robot.getDevice('dsname')
-#  ds.enable(timestep)
+actions = []
+motors = []
+state = [0,0,0]
+
+def robot_set_speed(left, right):
+    for i in range(4):
+        motors[i + 0].setVelocity(left)
+        motors[i + 4].setVelocity(right)
+
+
+def index_to_action(index):
+    if index == 0:
+        robot_set_speed(MAX_SPEED, MAX_SPEED)
+    elif index == 1:
+        robot_set_speed(-MAX_SPEED, MAX_SPEED)
+    elif index == 2:
+        robot_set_speed(MAX_SPEED, -MAX_SPEED)
+    elif index == 3:
+        robot_set_speed(-MAX_SPEED, -MAX_SPEED)
+
+
+def run_autopilot():
+    robot_set_speed(MAX_SPEED, MAX_SPEED)
+    
+def get_action():
+    index = rl.q_value_action(state)
+    index_to_action(index)
+    return index
+    
+def update_state():
+    global state
+    index = random.randint(0,2)
+    
+    state[index] += 1
+    if (index == 2 and state[index] > 3 or index != 2 and state[index] > 49):
+        state[index] = 0
 
 def main():
-    names = ["left motor 1",  "left motor 2",  "left motor 3",  "left motor 4",
-             "right motor 1", "right motor 2", "right motor 3", "right motor 4"]
+
+    names = [
+        "left motor 1", "left motor 2", "left motor 3", "left motor 4",
+        "right motor 1", "right motor 2", "right motor 3", "right motor 4",
+    ]
+
     for name in names:
         motor = robot.getDevice(name)
-        motor.setPosition(float('inf'))
+        motor.setPosition(float("inf"))
+        motor.setVelocity(0.0)
         motors.append(motor)
-        
+
+    distance_sensors = localisation.init_distance_sensors(robot, timestep)
+
+    gps = robot.getDevice("gps")
+    gps.enable(timestep)
+    previous_action = None
+    previous_state = None
     while robot.step(timestep) != -1:
-        if (autopilot):
-            run_autopilot()
+    
+        if (previous_action != None and previous_state != None):
+            rl.q_value_update(previous_state,state,previous_action)
+        previous_state = state.copy()
+        previous_action = get_action()
+        update_state()
+
+        readings = localisation.read_sensors(distance_sensors)
+        print("Readings:", readings)
+
+        simple_liks = localisation.compute_simple_likelihoods(readings)
+        print("Simple likelihoods:", simple_liks)
+
+        front_info = localisation.compute_front_likelihood(readings, gps, sigma=100.0)
+        left_info  = localisation.compute_left_likelihood(readings, gps, sigma=100.0)
+        right_info = localisation.compute_right_likelihood(readings, gps, sigma=100.0)
+
+        if front_info is not None:
+            print(
+                "[Front likelihood] "
+                f"measured_raw={front_info['measured_raw']:.1f}, "
+                f"expected_raw={front_info['expected_raw']:.1f}, "
+                f"error={front_info['error']:.1f}, "
+                f"likelihood={front_info['likelihood']:.4f}"
+            )
+
+        if left_info is not None:
+            print(
+                "[Left likelihood]  "
+                f"measured_raw={left_info['measured_raw']:.1f}, "
+                f"expected_raw={left_info['expected_raw']:.1f}, "
+                f"error={left_info['error']:.1f}, "
+                f"likelihood={left_info['likelihood']:.4f}"
+            )
+
+        if right_info is not None:
+            print(
+                "[Right likelihood] "
+                f"measured_raw={right_info['measured_raw']:.1f}, "
+                f"expected_raw={right_info['expected_raw']:.1f}, "
+                f"error={right_info['error']:.1f}, "
+                f"likelihood={right_info['likelihood']:.4f}"
+            )
+        total_w = localisation.combined_weight(front_info, left_info, right_info)
+        print(f"[Total measurement weight] w = {total_w:.4f}")
+
 
 if __name__ == "__main__":
     main()
