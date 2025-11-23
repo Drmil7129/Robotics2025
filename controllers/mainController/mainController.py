@@ -44,6 +44,7 @@ timestep = int(robot.getBasicTimeStep())
 
 actions = []
 motors = []
+position_sensors = []
 state = [0,0,0]
 
 def robot_set_speed(left, right):
@@ -91,6 +92,13 @@ def main():
         motor.setPosition(float("inf"))
         motor.setVelocity(0.0)
         motors.append(motor)
+    
+    for motor in motors:
+        possition_sensor = motor.getPositionSensor()
+        possition_sensor.enable(timestep)
+        position_sensors.append(possition_sensor)
+        
+        
 
     distance_sensors = localisation.init_distance_sensors(robot, timestep)
 
