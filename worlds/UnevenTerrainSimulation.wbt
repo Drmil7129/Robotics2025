@@ -6,6 +6,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Sassafras.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/factory/containers/protos/CardboardBox.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Oak.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Wall.proto"
 
 WorldInfo {
   info [
@@ -1470,6 +1471,7 @@ CardboardBox {
   rotation 0.861655746286726 0.35890228321207 0.358801513369479 1.72070091325276
   name "cardboard box(3)"
   size 1.2 0.6 1
+  locked TRUE
 }
 CardboardBox {
   translation -0.011882441662218815 -34.46642520363706 1.4388305798319985
