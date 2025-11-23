@@ -23,17 +23,10 @@ class RobotState:
 
 
 ROBOT_ACTIONS = {
-<<<<<<< HEAD
-    'FORWARD': 0,
-    'LEFT': 1,
-    'RIGHT': 2,
-    'STOP': 3
-=======
     "FORWARD": 0,
     "LEFT": 1,
     "RIGHT": 2,
     "STOP": 3,
->>>>>>> main
 }
 
 TIME_STEP = 16
