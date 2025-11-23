@@ -22,7 +22,6 @@ ROBOT_ACTIONS = {
     'RIGHT': 2,
     'STOP': 3
 }
-}
 
 TIME_STEP = 16
 TARGET_POINTS_SIZE = 13
