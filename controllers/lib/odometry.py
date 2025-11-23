@@ -4,10 +4,10 @@ import random
 PI = math.pi
 
 increments_per_tour = 1000.0
-axis_wheel_ratio = 1.4134
+axis_wheel_ratio = 0.03416
 wheel_diameter_left = 0.0416
 wheel_diameter_right = 0.0404
-scaling_factor = 0.976
+scaling_factor = 1
 
 class Particle:
     def __init__(self, x=0.0, y=0.0, theta=0.0, weight=1.0):
@@ -17,7 +17,7 @@ class Particle:
         self.weight = weight
 
 class ProbabilisticMotionModel:
-    def __init__(self, num_particles, start_x, start_y, start_theta):
+    def __init__(self):
       
         self.alpha1 = 0.1  # Rotation error due to rotation
         self.alpha2 = 0.05 # Rotation error due to translation
@@ -73,7 +73,6 @@ class OdometryState:
         self.pos_left_prev = []
         self.pos_right_prev = []
 
-
 class OdometryResult:
     def __init__(self):
         self.x = 0.0
@@ -87,7 +86,7 @@ class Odometry:
         self.state = OdometryState()
         self.result = OdometryResult()
 
-        self.motion_model = ProbabilisticMotionModel(100, 0.0, 0.0, 0.0)
+        self.motion_model = ProbabilisticMotionModel()
 
         self.num_particles = 100
         self.particles = [
@@ -113,7 +112,7 @@ class Odometry:
         if len(pos_left_list) != len(self.state.pos_left_prev) or \
            len(pos_right_list) != len(self.state.pos_right_prev):
             raise ValueError("Number of wheels provided does not match start_pos configuration")
-        
+
         deltas_pos_right = []
         for i, current_pos in enumerate(pos_right_list):
             delta = current_pos - self.state.pos_right_prev[i]
@@ -127,10 +126,13 @@ class Odometry:
 
         avg_delta_pos_left = sum(deltas_pos_left) / len(deltas_pos_left)
         avg_delta_pos_right = sum(deltas_pos_right) / len(deltas_pos_right)
+    
 
         delta_left = avg_delta_pos_left * self.config.wheel_conversion_left
         delta_right = avg_delta_pos_right * self.config.wheel_conversion_right
         delta_dist = (delta_right + delta_left) / 2.0
+  
+
 
         delta_theta = (delta_right - delta_left) / self.config.wheel_distance
         theta2 = self.result.theta + delta_theta / 2.0
@@ -141,11 +143,9 @@ class Odometry:
         self.result.x += delta_x
         self.result.y += delta_y
         self.result.theta += delta_theta
+        print(f"Odometry Update: Δx={delta_x}, Δy={delta_y}, Δθ={self.result.theta }")
+      
 
-        if self.result.theta > PI:
-            self.result.theta -= 2 * PI
-        elif self.result.theta < -PI:
-            self.result.theta += 2 * PI
 
         self.particles = self.motion_model.prediction_step(self.particles, delta_dist, delta_theta)    
 
