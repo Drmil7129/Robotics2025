@@ -4,10 +4,10 @@ import random
 PI = math.pi
 
 increments_per_tour = 1000.0
-axis_wheel_ratio = 0.03416
-wheel_diameter_left = 0.0416
-wheel_diameter_right = 0.0404
-scaling_factor = 1
+axis_wheel_ratio = 5.45
+wheel_diameter_left = 0.64
+wheel_diameter_right = 0.64
+scaling_factor = 0.99
 
 class Particle:
     def __init__(self, x=0.0, y=0.0, theta=0.0, weight=1.0):
@@ -94,6 +94,8 @@ class Odometry:
             for _ in range(self.num_particles)
         ]
 
+        self.EncoderUnit = 159.23
+
     def start_pos(self, pos_left, pos_right):
         self.result.x = 0.0
         self.result.y = 0.0
@@ -143,7 +145,11 @@ class Odometry:
         self.result.x += delta_x
         self.result.y += delta_y
         self.result.theta += delta_theta
-        print(f"Odometry Update: Δx={delta_x}, Δy={delta_y}, Δθ={self.result.theta }")
+
+        if self.result.theta > PI:
+            self.result.theta -= 2 * PI
+        elif self.result.theta < -PI:
+            self.result.theta += 2 * PI
       
 
 
