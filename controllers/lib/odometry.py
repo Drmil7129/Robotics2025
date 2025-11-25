@@ -105,6 +105,9 @@ class Odometry:
     def get_coordinates(self):
         return self.result
 
+    def get_particles(self):
+        return self.particles
+    
     def start_pos(self, pos_left, pos_right):
         self.result.x = 0.0
         self.result.y = 0.0
