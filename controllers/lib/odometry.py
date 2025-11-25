@@ -96,6 +96,15 @@ class Odometry:
 
         self.EncoderUnit = 159.23
 
+    def get_heading(self):
+        return self.result.theta
+    
+    def get_position(self):
+        return (self.result.x, self.result.y)
+    
+    def get_coordinates(self):
+        return self.result
+
     def start_pos(self, pos_left, pos_right):
         self.result.x = 0.0
         self.result.y = 0.0
