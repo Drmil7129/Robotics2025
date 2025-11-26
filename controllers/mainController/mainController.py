@@ -7,6 +7,8 @@ import sys, os, random
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
 import localisation 
 import reinforcement_learning as rl
+import numpy as np
+import copy
 
 class RobotState:
     def __init__(self, position_x=0.0, position_y=0.0, heading=0.0, has_cargo=True):
@@ -29,23 +31,20 @@ ROBOT_ACTIONS = {
     "STOP": 3,
 }
 
-TIME_STEP = 16
-TARGET_POINTS_SIZE = 13
-DISTANCE_TOLERANCE = 1.5
-MAX_SPEED = 7.0
-TURN_COEFFICIENT = 4.0
-REWARD_PER_DISTANCE = 1
-NUM_OF_STATES = 2500
-NUM_OF_ACTIONS = 6
+
+MAX_SPEED = 10.0
 
 autopilot = True
 robot = Robot()
-timestep = int(robot.getBasicTimeStep())
+timestep = 512
+#int(robot.getBasicTimeStep())
 
 actions = []
 motors = []
 position_sensors = []
-state = [0,0,0]
+distance_sensors = []
+touch_sensor = None
+state = RobotState()
 
 def robot_set_speed(left, right):
     for i in range(4):
@@ -66,22 +65,30 @@ def index_to_action(index):
 
 def run_autopilot():
     robot_set_speed(MAX_SPEED, MAX_SPEED)
-    
+
+#picks an action for the robot to do, performs the action and returns the action index    
 def get_action():
     index = rl.q_value_action(state)
     index_to_action(index)
     return index
+
+#returns true if a sensor detects a collision
+def check_collision():
+    for sensor in distance_sensors:
+        #(sensor, ": " , distance_sensors[sensor].getValue())
+        if (distance_sensors[sensor].getValue() < 500):
+            return True
+            
+#returns false if the touch sensor doesn't detect the cargo
+def check_cargo():
+    if (touch_sensor.getValue() == 0):
+        return False
     
-def update_state():
-    global state
-    index = random.randint(0,2)
-    
-    state[index] += 1
-    if (index == 2 and state[index] > 3 or index != 2 and state[index] > 49):
-        state[index] = 0
 
 def main():
-
+    global state
+    global distance_sensors
+    global touch_sensor
     names = [
         "left motor 1", "left motor 2", "left motor 3", "left motor 4",
         "right motor 1", "right motor 2", "right motor 3", "right motor 4",
@@ -99,26 +106,45 @@ def main():
         position_sensors.append(possition_sensor)
         
         
-
+    touch_sensor = robot.getDevice("touch_sensor")
+    touch_sensor.enable(timestep)
     distance_sensors = localisation.init_distance_sensors(robot, timestep)
 
     gps = robot.getDevice("gps")
+    compass = robot.getDevice("compass")
     gps.enable(timestep)
+    compass.enable(timestep)
     previous_action = None
     previous_state = None
+    count = 0
+    has_collided = False
+    cargo = True
     while robot.step(timestep) != -1:
-    
+        check_cargo()
+        states = gps.getValues()
+        bearings = compass.getValues()
+        bearing = ((np.arctan2(bearings[0],bearings[1]) * 180) / np.pi)
+        if (bearing < 0):
+            bearing += 360
+        state.position_x = states[0]
+        state.position_y = states[1]
+        state.heading = bearing
+        if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or state.position_y + 24 > 50 or state.position_y + 24 < 0 ):
+            break
         if (previous_action != None and previous_state != None):
-            rl.q_value_update(previous_state,state,previous_action)
-        previous_state = state.copy()
+            has_collided = check_collision()
+            cargo = check_cargo()
+            rl.q_value_update(previous_state,state,previous_action,has_collided,cargo)
+        if (has_collided or cargo == False):
+            break
+        previous_state = copy.deepcopy(state)
         previous_action = get_action()
-        update_state()
 
         readings = localisation.read_sensors(distance_sensors)
-        print("Readings:", readings)
+        #print("Readings:", readings)
 
         simple_liks = localisation.compute_simple_likelihoods(readings)
-        print("Simple likelihoods:", simple_liks)
+        #print("Simple likelihoods:", simple_liks)
 
         front_info = localisation.compute_front_likelihood(readings, gps, sigma=100.0)
         left_info  = localisation.compute_left_likelihood(readings, gps, sigma=100.0)
@@ -151,8 +177,8 @@ def main():
                 f"likelihood={right_info['likelihood']:.4f}"
             )
         total_w = localisation.combined_weight(front_info, left_info, right_info)
-        print(f"[Total measurement weight] w = {total_w:.4f}")
-
-
+        #print(f"[Total measurement weight] w = {total_w:.4f}") 
+    rl.save_q_table("../lib/q_table")
+    print("Q_table svaed")
 if __name__ == "__main__":
     main()
