@@ -10,7 +10,7 @@ SENSOR_MAX_RANGE_M = 10.0  # meters (matches DistanceSensor lookupTable)
 SENSOR_MAX_RAW = 1000.0    # raw value at max range
 
 # Names of the distance sensors on Moose
-SENSOR_NAMES = ["ds_front", "ds_left", "ds_right"]
+SENSOR_NAMES = ["ds_front1", "ds_front2", "ds_front3", "ds_left1", "ds_left2", "ds_right1", "ds_right2", "ds_back1", "ds_back2", "ds_back3"]
 
 
 # ================== DEVICE INITIALISATION / READING ==================
