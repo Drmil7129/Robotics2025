@@ -113,8 +113,8 @@ class Odometry:
         self.result.y = 0.0
         self.result.theta = 0.0
 
-        self.state.pos_left_prev = list(pos_left)
-        self.state.pos_right_prev = list(pos_right)
+        self.state.pos_left_prev = [self.EncoderUnit * p for p in pos_left]
+        self.state.pos_right_prev = [self.EncoderUnit * p for p in pos_right]
 
         self.particles = [
             Particle(0.0, 0.0, 0.0, 1.0 / self.num_particles) 
@@ -127,14 +127,16 @@ class Odometry:
            len(pos_right_list) != len(self.state.pos_right_prev):
             raise ValueError("Number of wheels provided does not match start_pos configuration")
 
+        current_pos_left = [self.EncoderUnit * p for p in pos_left_list]
+        current_pos_right = [self.EncoderUnit * p for p in pos_right_list]
         deltas_pos_right = []
-        for i, current_pos in enumerate(pos_right_list):
+        for i, current_pos in enumerate(current_pos_right):
             delta = current_pos - self.state.pos_right_prev[i]
             deltas_pos_right.append(delta)
 
     
         deltas_pos_left = []
-        for i, current_pos in enumerate(pos_left_list):
+        for i, current_pos in enumerate(current_pos_left):
             delta = current_pos - self.state.pos_left_prev[i]
             deltas_pos_left.append(delta)
 
