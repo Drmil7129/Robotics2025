@@ -316,3 +316,31 @@ def low_variance_resample(particles):
         new_particles.append(new_p)
 
     return new_particles
+    # ================== POSE ESTIMATION FROM PARTICLES ==================
+
+def estimate_pose(particles):
+    """
+    Estimate (x, y, theta) from a list of particles.
+    Simple mean for x,y and circular mean for theta.
+    """
+    n = len(particles)
+    if n == 0:
+        return 0.0, 0.0, 0.0
+
+    sum_x = 0.0
+    sum_y = 0.0
+    sum_sin = 0.0
+    sum_cos = 0.0
+
+    for p in particles:
+        sum_x += p.x
+        sum_y += p.y
+        sum_sin += math.sin(p.theta)
+        sum_cos += math.cos(p.theta)
+
+    x_hat = sum_x / n
+    y_hat = sum_y / n
+    theta_hat = math.atan2(sum_sin / n, sum_cos / n)
+
+    return x_hat, y_hat, theta_hat
+
