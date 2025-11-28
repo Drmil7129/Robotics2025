@@ -231,6 +231,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 10
     }
     DistanceSensor {
@@ -249,6 +250,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 10
     }
     DistanceSensor {
@@ -267,6 +269,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 10
     }
     DistanceSensor {
@@ -285,6 +288,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 10
     }
     DistanceSensor {
@@ -303,6 +307,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 10
     }
     DistanceSensor {
@@ -321,6 +326,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 15
       redColorSensitivity 0.5
     }
@@ -340,6 +346,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 15
       redColorSensitivity 0.5
     }
@@ -359,6 +366,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 15
       redColorSensitivity 0.5
     }
@@ -378,6 +386,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 15
       redColorSensitivity 0.5
     }
@@ -397,6 +406,7 @@ Robot {
         0 0 0
         0.3 1000 0
       ]
+      type "infra-red"
       numberOfRays 15
       redColorSensitivity 0.5
     }
@@ -595,7 +605,7 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.006100730588425822 -1.727702425568845e-10 -0.03625474413935745
+                translation -0.006100730588425824 -1.7277024255688455e-10 -0.036254744139357455
                 rotation 0 1 0 5.235254201125047
                 children [
                   DEF WHEEL_SLOT Group {
@@ -736,7 +746,7 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation 0.014701393289565214 -1.4204548648419822e-10 0.03242945595619135
+                translation 0.014701393289565212 -1.4204548648419827e-10 0.03242945595619135
                 rotation 0 0.9999999999999999 0 3.2336741304760057
                 children [
                   DEF WHEEL_SLOT Group {
@@ -1156,7 +1166,7 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.03635270557973506 2.5791768720746113e-10 0.005486766676841344
+                translation -0.03635270557973505 2.57917687207461e-10 0.005486766676841342
                 rotation 0 -1 0 5.973023435437919
                 children [
                   DEF WHEEL_SLOT Group {
@@ -1296,7 +1306,7 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.032678095891004164 2.167177548528576e-10 -0.014140053112770657
+                translation -0.032678095891004164 2.1671775485285755e-10 -0.014140053112770657
                 rotation 0 1 0 3.406216154013872
                 children [
                   DEF WHEEL_SLOT Group {
@@ -1436,8 +1446,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.0009129697398939166 2.2719071068875393e-10 -0.03441875538334348
-                rotation -1.4645364861944213e-305 -1 1.8222928268478607e-305 1.7378678691374558
+                translation -0.0009129697398939174 2.2719071068875393e-10 -0.03441875538334347
+                rotation -1.0769491934613273e-305 -1 1.340025877555116e-305 1.7378678691374558
                 children [
                   DEF WHEEL_SLOT Group {
                   }

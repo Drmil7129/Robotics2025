@@ -139,45 +139,6 @@ def main():
             break
         previous_state = copy.deepcopy(state)
         previous_action = get_action()
-
-        readings = localisation.read_sensors(distance_sensors)
-        #print("Readings:", readings)
-
-        simple_liks = localisation.compute_simple_likelihoods(readings)
-        #print("Simple likelihoods:", simple_liks)
-
-        front_info = localisation.compute_front_likelihood(readings, gps, sigma=100.0)
-        left_info  = localisation.compute_left_likelihood(readings, gps, sigma=100.0)
-        right_info = localisation.compute_right_likelihood(readings, gps, sigma=100.0)
-
-        if front_info is not None:
-            print(
-                "[Front likelihood] "
-                f"measured_raw={front_info['measured_raw']:.1f}, "
-                f"expected_raw={front_info['expected_raw']:.1f}, "
-                f"error={front_info['error']:.1f}, "
-                f"likelihood={front_info['likelihood']:.4f}"
-            )
-
-        if left_info is not None:
-            print(
-                "[Left likelihood]  "
-                f"measured_raw={left_info['measured_raw']:.1f}, "
-                f"expected_raw={left_info['expected_raw']:.1f}, "
-                f"error={left_info['error']:.1f}, "
-                f"likelihood={left_info['likelihood']:.4f}"
-            )
-
-        if right_info is not None:
-            print(
-                "[Right likelihood] "
-                f"measured_raw={right_info['measured_raw']:.1f}, "
-                f"expected_raw={right_info['expected_raw']:.1f}, "
-                f"error={right_info['error']:.1f}, "
-                f"likelihood={right_info['likelihood']:.4f}"
-            )
-        total_w = localisation.combined_weight(front_info, left_info, right_info)
-        #print(f"[Total measurement weight] w = {total_w:.4f}") 
     rl.save_q_table("../lib/q_table")
     print("Q_table svaed")
 if __name__ == "__main__":
