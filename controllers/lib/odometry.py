@@ -103,7 +103,7 @@ class Odometry:
         return (self.result.x, self.result.y)
     
     def get_coordinates(self):
-        return self.result
+        return (self.result.x, self.result.y, self.result.theta)
 
     def get_particles(self):
         return self.particles
@@ -169,6 +169,6 @@ class Odometry:
 
         self.particles = self.motion_model.prediction_step(self.particles, delta_dist, delta_theta)    
 
-        self.state.pos_left_prev = list(pos_left_list)
-        self.state.pos_right_prev = list(pos_right_list)
+        self.state.pos_left_prev = list(current_pos_left)
+        self.state.pos_right_prev = list(current_pos_right)
 
