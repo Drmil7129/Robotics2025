@@ -89,14 +89,18 @@ def state_to_index(state_data):
 
 
 def heading_to_index(h):
-    if (h > 315 or h <= 45):
+    if h is None or h != h:  # Check for None or NaN
+        return 0
+    if h > 315 or h <= 45:
         return 0        
-    elif (h >= 45 and h <= 135):
+    elif h >= 45 and h <= 135:
         return 1
-    elif (h >= 135 and h <= 225):
+    elif h >= 135 and h <= 225:
         return 2
-    elif (h >= 225 and h <=315):
+    elif h >= 225 and h <= 315:
         return 3
+    else:
+        return 0  # Default case
                 
         
         
