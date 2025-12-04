@@ -19,10 +19,10 @@ class Particle:
 class ProbabilisticMotionModel:
     def __init__(self):
       
-        self.alpha1 = 0.1
-        self.alpha2 = 0.05
-        self.alpha3 = 0.1
-        self.alpha4 = 0.05
+        self.alpha1 = 0.2  # Rotation error due to rotation
+        self.alpha2 = 0.1 # Rotation error due to translation
+        self.alpha3 = 0.2 # Translation error due to translation
+        self.alpha4 = 0.1 # Translation error due to rotation
 
     def sample_gaussian(self, variance):
         if variance <= 0: return 0
@@ -103,7 +103,7 @@ class Odometry:
         return (self.result.x, self.result.y)
     
     def get_coordinates(self):
-        return (self.result.x, self.result.y, self.result.theta)
+        return self.result
 
     def get_particles(self):
         return self.particles
@@ -121,7 +121,7 @@ class Odometry:
             for _ in range(self.num_particles)
         ]
 
-    def update(self, pos_left_list, pos_right_list):
+    def update(self, pos_left_list, pos_right_list, pitch_radians=0.0):
 
         if len(pos_left_list) != len(self.state.pos_left_prev) or \
            len(pos_right_list) != len(self.state.pos_right_prev):
@@ -147,14 +147,16 @@ class Odometry:
         delta_left = avg_delta_pos_left * self.config.wheel_conversion_left
         delta_right = avg_delta_pos_right * self.config.wheel_conversion_right
         delta_dist = (delta_right + delta_left) / 2.0
+
+        flat_dist = delta_dist * math.cos(pitch_radians)
   
 
 
         delta_theta = (delta_right - delta_left) / self.config.wheel_distance
         theta2 = self.result.theta + delta_theta / 2.0
 
-        delta_x = delta_dist * math.cos(theta2)
-        delta_y = delta_dist * math.sin(theta2)
+        delta_x = flat_dist * math.cos(theta2)
+        delta_y = flat_dist * math.sin(theta2)
 
         self.result.x += delta_x
         self.result.y += delta_y
@@ -167,7 +169,8 @@ class Odometry:
       
 
 
-        self.particles = self.motion_model.prediction_step(self.particles, delta_dist, delta_theta)    
+        self.particles = self.motion_model.prediction_step(self.particles, flat_dist, delta_theta)    
 
         self.state.pos_left_prev = list(current_pos_left)
         self.state.pos_right_prev = list(current_pos_right)
+
