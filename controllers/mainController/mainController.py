@@ -7,7 +7,8 @@ import sys, os, random
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
 import localisation
 import reinforcement_learning as rl
-import odometry     
+import odometry  
+import rl_integration   
 import numpy as np
 import copy
 
@@ -36,7 +37,7 @@ MAX_SPEED = 10.0
 
 autopilot = True
 robot = Robot()
-timestep = 512  # int(robot.getBasicTimeStep())
+timestep = 512
 
 actions = []
 motors = []
@@ -45,7 +46,7 @@ distance_sensors = []
 touch_sensor = None
 state = RobotState()
 
-odom = None   # <--- NEW: will hold Odometry object
+odom = None
 
 
 def robot_set_speed(left, right):
@@ -54,37 +55,22 @@ def robot_set_speed(left, right):
         motors[i + 4].setVelocity(right)
 
 
-def index_to_action(index):
-    if index == 0:
-        robot_set_speed(MAX_SPEED, MAX_SPEED)
-    elif index == 1:
-        robot_set_speed(-MAX_SPEED, MAX_SPEED)
-    elif index == 2:
-        robot_set_speed(MAX_SPEED, -MAX_SPEED)
-    elif index == 3:
-        robot_set_speed(-MAX_SPEED, -MAX_SPEED)
-
-
 def run_autopilot():
     robot_set_speed(MAX_SPEED, MAX_SPEED)
 
 
-# picks an action for the robot to do, performs the action and returns the action index
 def get_action():
     index = rl.q_value_action(state)
-    index_to_action(index)
+    rl_integration.execute_action_on_robot(index, robot_set_speed, MAX_SPEED)
     return index
 
 
-# returns true if a sensor detects a collision
 def check_collision():
     for sensor in distance_sensors:
-        # (sensor, ": " , distance_sensors[sensor].getValue())
         if (distance_sensors[sensor].getValue() < 50):
             return True
 
 
-# returns false if the touch sensor doesn't detect the cargo
 def check_cargo():
     if (touch_sensor.getValue() == 0):
         return False
@@ -122,11 +108,9 @@ def main():
     compass.enable(timestep)
     
     odom = odometry.Odometry()
-    # initial wheel encoder readings (4 left, 4 right)
     left_positions_init = [ps.getValue() for ps in position_sensors[:4]]
     right_positions_init = [ps.getValue() for ps in position_sensors[4:]]
     odom.start_pos(left_positions_init, right_positions_init)
-    # -----------------------------------------------------------
 
     previous_action = None
     previous_state = None
@@ -136,33 +120,19 @@ def main():
 
     while robot.step(timestep) != -1:
 
-        # ------- NEW: ODOMETRY + LOCALISATION PIPELINE --------
-        # Prediction: move particles using wheel encoders
         left_positions = [ps.getValue() for ps in position_sensors[:4]]
         right_positions = [ps.getValue() for ps in position_sensors[4:]]
         odom.update(left_positions, right_positions)
 
-        # Measurement update: distance sensors -> weights
         sensor_readings = localisation.read_sensors(distance_sensors)
         particles = odom.get_particles()
         localisation.update_particle_weights(particles, sensor_readings)
         particles = localisation.low_variance_resample(particles)
         odom.particles = particles
 
-   
-        # -------------------------------------------------------
-
         check_cargo()
-        states = gps.getValues()
-        bearings = compass.getValues()
-        bearing = ((np.arctan2(bearings[0], bearings[1]) * 180) / np.pi)
-        if (bearing < 0):
-            bearing += 360
-
-        state.position_x = states[0]
-        state.position_y = states[1]
-        state.heading = bearing
-        # -------------------------------------------------------
+        
+        state = rl_integration.get_current_state_from_localization(gps, distance_sensors, odom)
 
         if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
                 state.position_y + 24 > 50 or state.position_y + 24 < 0):
