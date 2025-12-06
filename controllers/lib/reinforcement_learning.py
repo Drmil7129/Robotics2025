@@ -49,8 +49,8 @@ def q_value_action(state_data):
     action_choice = -1
     state = state_to_index(state_data)
     choice = random.randint(0,10)
-    if (choice > EXPLORATION_RATE):
-        action_choice = random.randint(0,NUM_OF_ACTIONS-1)
+    if (choice < EXPLORATION_RATE * 10):
+        action_choice = policy()
     else:
         action_choice = np.argmax(Q_table[state[0]][state[1]][state[2]])
     if (EXPLORATION_RATE > MIN_EXPLORATION_RATE):
@@ -67,14 +67,16 @@ def q_value_update(state_data,next_state_data,action,has_collided,cargo):
     Q_table[state[0]][state[1]][state[2]][action_index] = Q_table[state[0]][state[1]][state[2]][action_index] + LEARNING_RATE * (reward_function(state,next_state,has_collided,cargo) + DISCOUNT_FACTOR * Q_table[state[0]][state[1]][state[2]].max() - Q_table[state[0]][state[1]][state[2]][action_index])
     print("The value for state ", state, " is ", Q_table[state[0]][state[1]][state[2]][action_index])
 
-#finds how good it is being in this state, by adding the immediate reward and the future discount total reward wehn following the policy    
-def value_function(current_state,previous_state,discount_exponent):
-    if (discount_exponent == MAX_DISCOUNT_EXPONENT):
-        return 0
-    else:
-        reward = reward_function(current_state,previous_state)
-        #action = getActionFromPolicy
-        return reward
+def policy():
+   choice = random.randint(0,10) 
+   if (choice < 6):
+       return 0
+   elif (choice > 5 and choice < 8):
+       return 1
+   elif (choice > 7 and choice < 9):
+       return 2
+   else:
+       return 3
     
 def save_q_table(path):
     np.save(path,Q_table)

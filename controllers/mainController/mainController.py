@@ -67,7 +67,7 @@ def get_action():
 
 def check_collision():
     for sensor in distance_sensors:
-        if (distance_sensors[sensor].getValue() < 50):
+        if (distance_sensors[sensor].getValue() < 100):
             return True
 
 
@@ -144,6 +144,7 @@ def main():
             rl.q_value_update(previous_state, state, previous_action, has_collided, cargo)
 
         if (has_collided or cargo == False):
+            print("Collision detected")
             break
 
         previous_state = copy.deepcopy(state)
