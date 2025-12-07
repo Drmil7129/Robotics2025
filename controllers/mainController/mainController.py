@@ -59,15 +59,25 @@ def run_autopilot():
     robot_set_speed(MAX_SPEED, MAX_SPEED)
 
 
-def get_action():
-    index = rl.q_value_action(state)
-    rl_integration.execute_action_on_robot(index, robot_set_speed, MAX_SPEED)
+def get_action(state):
+    index = 0
+    heading = rl.heading_to_index(state.heading)
+    if ((distance_sensors["ds_right1"].getValue() < 200 and distance_sensors["ds_left1"].getValue() < 200) or (heading == 3 and distance_sensors["ds_front1"].getValue() > 200)):
+        index = 0
+    if ((distance_sensors["ds_front1"].getValue() < 200 or heading == 2 ) and distance_sensors["ds_left1"].getValue() > 200):
+        index = 1
+    if ((distance_sensors["ds_front1"].getValue() < 200 or heading == 0 ) and distance_sensors["ds_right1"].getValue() > 200):
+        index = 2
+    else:
+        index = random.randint(1,2)
+    print("Index is ", index)
+    #rl_integration.execute_action_on_robot(index, robot_set_speed, MAX_SPEED)
     return index
 
 
 def check_collision():
     for sensor in distance_sensors:
-        if (distance_sensors[sensor].getValue() < 100):
+        if (distance_sensors[sensor].getValue() < 1):
             return True
 
 
@@ -133,24 +143,22 @@ def main():
         check_cargo()
         
         state = rl_integration.get_current_state_from_localization(gps, distance_sensors, odom)
-
-        if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
-                state.position_y + 24 > 50 or state.position_y + 24 < 0):
-            break
+        print("The compass value is ", compass.getValues())
+        print("The state value is ", state.heading)
+        #if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or state.position_y + 24 > 50 or state.position_y + 24 < 0):
+            #break
 
         if (previous_action != None and previous_state != None):
             has_collided = check_collision()
             cargo = check_cargo()
-            rl.q_value_update(previous_state, state, previous_action, has_collided, cargo)
 
-        if (has_collided or cargo == False):
-            print("Collision detected")
-            break
+        #if (has_collided or cargo == False):
+            #print("Collision detected")
+            #break
 
         previous_state = copy.deepcopy(state)
-        previous_action = get_action()
+        previous_action = get_action(state)
 
-    rl.save_q_table("../lib/q_table")
     print("Q_table svaed")
 
 if __name__ == "__main__":
