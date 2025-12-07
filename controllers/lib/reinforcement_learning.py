@@ -4,7 +4,6 @@ import random
 
 
 #TO-DO:
-#Integrate policy
 #Make a separate ruleset for testing
 
 
@@ -16,20 +15,30 @@ NUM_OF_ACTIONS = 4
 NUM_OF_DIRECTIONS = 4
 LEARNING_RATE = 0.5
 DISCOUNT_FACTOR = 0.5
-EXPLORATION_RATE = 0.5
+EXPLORATION_RATE = 0
 EXPLORATION_RATE_DECAY = 0.995
 MIN_EXPLORATION_RATE = 0.1
 MAX_TIMESTEPS = 300
 MAX_DISCOUNT_EXPONENT = 10
 GOAL_STATE = (20,2)
 
+#try to load q-table from file, if it can't, creaste it from scratch
 try:
     Q_table = np.load("../lib/q_table.npy")
+
 except:
     Q_table = np.zeros((MAX_X,MAX_Y,NUM_OF_DIRECTIONS,NUM_OF_ACTIONS))
 
-
-
+#try to load exploration rate value from file, if not set it to default value
+try: 
+    f = open("../lib/exploration_rate.txt","r")
+    EXPLORATION_RATE = float(f.read())
+    print("exploration rate is ", EXPLORATION_RATE)
+except:
+    print("Couldnt load")
+    EXPLORATION_RATE = 0.5
+    
+    
 #calculates immediate reward for reaching a state
 def reward_function(prev_distance, next_distance,has_collided,cargo):
     reward = 0
@@ -80,6 +89,9 @@ def policy():
     
 def save_q_table(path):
     np.save(path,Q_table)
+    f = open("../lib/exploration_rate.txt","w")
+    f.write(str(EXPLORATION_RATE))
+    
 
 #translates the state data into indexes for the q-table
 def state_to_index(state_data):

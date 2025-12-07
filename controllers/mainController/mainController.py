@@ -153,6 +153,5 @@ def main():
     rl.save_q_table("../lib/q_table")
     print("Q_table svaed")
 
-
 if __name__ == "__main__":
     main()
