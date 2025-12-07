@@ -87,6 +87,9 @@ def main():
         "right motor 1", "right motor 2", "right motor 3", "right motor 4",
     ]
 
+    imu = robot.getDevice("imu")
+    imu.enable(timestep)
+
     for name in names:
         motor = robot.getDevice(name)
         motor.setPosition(float("inf"))
@@ -120,9 +123,11 @@ def main():
 
     while robot.step(timestep) != -1:
 
+        rpy = imu.getRollPitchYaw()
+
         left_positions = [ps.getValue() for ps in position_sensors[:4]]
         right_positions = [ps.getValue() for ps in position_sensors[4:]]
-        odom.update(left_positions, right_positions)
+        odom.update(left_positions, right_positions, pitch_radians=rpy[1])
 
         sensor_readings = localisation.read_sensors(distance_sensors)
         particles = odom.get_particles()
