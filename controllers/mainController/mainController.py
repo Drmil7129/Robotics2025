@@ -133,7 +133,7 @@ def main():
         check_cargo()
         
         state = rl_integration.get_current_state_from_localization(gps, distance_sensors, odom)
-
+        print("The heading is ", state.heading)
         if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
                 state.position_y + 24 > 50 or state.position_y + 24 < 0):
             break

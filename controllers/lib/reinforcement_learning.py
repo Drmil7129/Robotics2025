@@ -74,7 +74,7 @@ def q_value_update(state_data,next_state_data,action,has_collided,cargo):
     next_state = state_to_index(next_state_data)
     action_index = action
     Q_table[state[0]][state[1]][state[2]][action_index] = Q_table[state[0]][state[1]][state[2]][action_index] + LEARNING_RATE * (reward_function(state,next_state,has_collided,cargo) + DISCOUNT_FACTOR * Q_table[state[0]][state[1]][state[2]].max() - Q_table[state[0]][state[1]][state[2]][action_index])
-    print("The value for state ", state, " is ", Q_table[state[0]][state[1]][state[2]][action_index])
+    #print("The value for state ", state, " is ", Q_table[state[0]][state[1]][state[2]][action_index])
 
 def policy():
    choice = random.randint(0,10) 
