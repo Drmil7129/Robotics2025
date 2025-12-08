@@ -39,8 +39,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation -0.44080185168010094 0.39479842155888256 0.8061190568954495 1.890934247740749
-  position 10.91518423131071 -10.170447473975996 45.62165525251466
+  orientation -0.12169450436645664 0.9653825628586437 0.23070967672700515 1.0001637639672236
+  position -105.78334431258183 -11.789167490771238 107.77696299740352
   near 1
   follow "moose"
 }
@@ -74,8 +74,8 @@ DEF ELEVATION_GRID Solid {
   locked TRUE
 }
 Solid {
-  translation -6.616813917321255 13.909283947905678 5.74078061589062
-  rotation 0.1928817304899016 0.1570962608590377 0.9685646095472051 0.08796753288200138
+  translation -6.599728908185319 13.973687749274843 5.768609446686209
+  rotation -0.18363173212441608 0.30543711886886316 0.9343380295022111 0.04256747556528982
   children [
     Shape {
       appearance Cardboard {
@@ -131,27 +131,32 @@ DEF PLANE Solid {
   boundingObject USE PLANE_SHAPE
 }
 Wall {
-  translation 10 -45 0
+  translation 0.659825 24.5 0
+  rotation 0 0 1 1.5708
+  name "wall(3)"
+  size 1 50 10
+}
+Wall {
+  translation 24.5 0.94 0
   rotation 0 0 -1 0
   name "wall(1)"
-  size 1 15 2.4
+  size 1 50 10
 }
 Wall {
-  translation 0.66 -40 0
+  translation 0.66 -24.5 0
   rotation 0 0 1 1.5708
   name "wall(2)"
-  size 1 15 2.4
+  size 1 50 10
 }
 Wall {
-  size 1 10 2.4
+  translation -24.5 0.41 0
+  name "wall0"
+  size 1 50 10
 }
 Robot {
-  translation -6.522282252018787 14.02110288958642 5.281696713811119
-  rotation 0.5184900822474953 0.47426729388130967 -0.7115044402992049 0.03031072586060015
+  translation -6.499742313352904 14.069735021057852 5.3071915927671505
+  rotation -0.11834307359045222 0.18103578857031496 -0.9763303540246452 0
   children [
-    InertialUnit {
-      name "imu"
-    }
     Solid {
       translation 0 0.53 0.42
       children [
@@ -185,8 +190,8 @@ Robot {
       name "holder2"
     }
     TouchSensor {
-      translation 4.0042752298852236e-05 -0.029951177190122635 0.40940679003077207
-      rotation 0.5941521518766709 -0.8041298727605708 -0.018930614210579632 6.363781085200326e-05
+      translation 3.186761860884957e-05 -0.029922182284208176 0.4093819474458966
+      rotation 0.5732035611696219 -0.8166826989770928 -0.06683596826526175 6.600100627863528e-05
       children [
         Shape {
           geometry Box {
@@ -594,7 +599,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 17323.814242552096
+            position 17323.81923409966
             axis 0 -1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -615,8 +620,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.005213675080811119 -1.7277024255688537e-10 -0.036392897363009796
-                rotation 0 1 0 5.2108346492031
+                translation -0.005031954006303066 -1.7277024255688455e-10 -0.036418468188561676
+                rotation 0 1 0 5.205843101638386
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -735,7 +740,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 17774.666490787742
+            position 17774.666820037517
             axis 0 -1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -756,8 +761,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.025499739573304463 -1.420454864841975e-10 -0.02485083217847381
-                rotation 0 -1 0 5.8184420838715205
+                translation -0.02549155606039538 -1.4204548648419835e-10 -0.024859226614855626
+                rotation 0 -1 0 5.81877133364647
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -876,7 +881,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 16982.450235155975
+            position 16982.451048944473
             axis 0 -1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -895,8 +900,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.03414692166462768 -1.4447354423906086e-10 0.00441287338884599
-                rotation 0 -1 0 5.283535156732291
+                translation -0.034150501502909714 -1.4447354423906086e-10 0.004385083558607098
+                rotation 0 -0.9999999999999999 0 5.284348945230199
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1015,7 +1020,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 16718.60344810455
+            position 16718.60465992315
             axis 0 -1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1036,8 +1041,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation 0.020001497451290845 -1.7095524995622662e-10 -0.02658959988031688
-                rotation 0 -1 0 5.33053100684987
+                translation 0.020033704528929955 -1.7095524995622582e-10 -0.026565342176167565
+                rotation 0 -1 0 5.331742825448545
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1155,7 +1160,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 15343.312635139888
+            position 15343.324199210685
             axis 0 1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1176,8 +1181,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.034055990965231576 2.5791768720746066e-10 -0.013849667537853452
-                rotation 0 -0.9999999999999999 0 0.22588499266238712
+                translation -0.03421386884171082 2.5791768720746087e-10 -0.013454924392771893
+                rotation 0 -1 0 0.21432092186513835
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1295,7 +1300,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 14457.780658614667
+            position 14457.781092258641
             axis 0 1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1316,8 +1321,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation 0.03121764461768953 2.167177548528581e-10 0.017124769125955994
-                rotation 0 -1 0 6.111918512740953
+                translation 0.03122506773520481 2.1671775485285789e-10 0.017111230172770022
+                rotation 0 -1 0 6.111484868766706
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1435,7 +1440,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 14396.614652112561
+            position 14396.614878674167
             axis 0 1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1456,8 +1461,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation 0.01528266870442252 2.2719071068875383e-10 0.0308532700561101
-                rotation 3.25096132662872e-306 1 1.611839956904653e-306 1.8371133641284707
+                translation 0.01528965847854033 2.2719071068875393e-10 0.03084980679832528
+                rotation 1.5373813721942403e-304 1 7.620230337608638e-305 1.8373399257342844
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1575,7 +1580,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 15084.988672460971
+            position 15084.987417709559
             axis 0 1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1596,8 +1601,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.01916718309172954 1.892028755889672e-10 0.02719713935690015
-                rotation 0 0.9999999999999999 0 5.3439352299638845
+                translation -0.01920129364338354 1.8920287558896745e-10 0.027173067903552756
+                rotation 0 0.9999999999999999 0 5.3426804785513955
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1778,8 +1783,8 @@ Robot {
   controller "mainController"
 }
 CardboardBox {
-  translation -4.0120563831427605 11.17388480986893 5.832212410609086
-  rotation 0.6556192615613672 0.6528012237882906 0.3794916943626537 1.6156114550434542
+  translation -4.012261657286554 11.170076078510533 5.833282858288445
+  rotation 0.6547024664483814 0.6541329362207554 0.3787806517994536 1.614469124491295
   name "robot cardboard payload"
   size 1.2 0.6 1
   mass 50
