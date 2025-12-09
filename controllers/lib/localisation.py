@@ -2,14 +2,32 @@
 import math
 import random  # for resampling
 
-# ---- Map / sensor assumptions ----
-WALL_X = 10.0              
-WALL_Y_LEFT = -40.0       
-WALL_Y_RIGHT = -50.0       
+# ================== MAP / SENSOR ASSUMPTIONS ==================
 
-SENSOR_MAX_RANGE_M = 10.0 
-SENSOR_MAX_RAW = 1000.0   
+SENSOR_MAX_RANGE_M = 10.0
+SENSOR_MAX_RAW = 1000.0
 
+# --- Map in odometry frame ---
+# Robot start (world frame): x_r = -6.49974, y_r = 14.0697
+# Walls (world frame): x = ±24.5, y = ±24.5
+# Convert to odometry frame: x_odo = x_world - x_r, y_odo = y_world - y_r
+W_LEFT   = -24.5 - (-6.49974)
+W_RIGHT  =  24.5 - (-6.49974) 
+H_TOP    =  24.5 - 14.0697     
+H_BOTTOM = -24.5 - 14.0697      
+
+# Four outer walls as line segments in odometry (x, y) plane
+WALL_SEGMENTS = [
+    ((W_LEFT,  H_BOTTOM), (W_RIGHT, H_BOTTOM)),  # bottom wall
+    ((W_LEFT,  H_TOP   ), (W_RIGHT, H_TOP   )),  # top wall
+    ((W_LEFT,  H_BOTTOM), (W_LEFT,  H_TOP   )),  # left wall
+    ((W_RIGHT, H_BOTTOM), (W_RIGHT, H_TOP   )),  # right wall
+]
+
+# Sensor directions relative to robot heading (radians)
+FRONT_SENSOR_ANGLE = 0.0
+LEFT_SENSOR_ANGLE  = +math.pi / 2.0
+RIGHT_SENSOR_ANGLE = -math.pi / 2.0
 
 SENSOR_NAMES = [
     "ds_front1", "ds_front2", "ds_front3",
@@ -56,35 +74,80 @@ def compute_simple_likelihoods(readings):
     return {name: simple_likelihood(val) for name, val in readings.items()}
 
 
+# ================== RAYCAST GEOMETRY WITH WALL SEGMENTS ==================
+
+def ray_segment_intersection(ray_origin, ray_dir, p1, p2):
+    """
+    Intersection between a ray and a segment.
+
+    ray_origin: (x0, y0)
+    ray_dir:    (dx, dy)   -- direction (need not be normalised)
+    p1, p2:     endpoints of segment
+
+    Returns distance t >= 0 along ray if intersection exists, else None.
+    """
+    x0, y0 = ray_origin
+    dx, dy = ray_dir
+    x1, y1 = p1
+    x2, y2 = p2
+
+    sx = x2 - x1
+    sy = y2 - y1
+
+    denom = dx * (-sy) - dy * (-sx)
+    if abs(denom) < 1e-9:
+        # Ray and segment are parallel or nearly so
+        return None
+
+    inv_denom = 1.0 / denom
+    rx = x1 - x0
+    ry = y1 - y0
+
+    # Solve for t (along ray) and u (along segment)
+    t = (rx * (-sy) - ry * (-sx)) * inv_denom
+    u = (dx * ry - dy * rx) * inv_denom
+
+    if t >= 0.0 and 0.0 <= u <= 1.0:
+        return t
+    return None
+
+
+def expected_distance_generic(x, y, theta, sensor_angle,
+                              max_range=SENSOR_MAX_RANGE_M):
+    """
+    Cast a ray from (x, y) in direction (theta + sensor_angle) and return
+    distance to nearest wall segment, capped at max_range.
+    """
+    beam_theta = theta + sensor_angle
+    dir_x = math.cos(beam_theta)
+    dir_y = math.sin(beam_theta)
+
+    origin = (x, y)
+    ray_dir = (dir_x, dir_y)
+
+    closest = max_range  # default if no hit
+
+    for (p1, p2) in WALL_SEGMENTS:
+        t = ray_segment_intersection(origin, ray_dir, p1, p2)
+        if t is not None and 0.0 <= t < closest:
+            closest = t
+
+    return closest
+
+
 # ================== GEOMETRY: EXPECTED DISTANCES (POSE-BASED) ==================
-# All of these are purely from pose (x, y, theta).
-# Odometry provides (x, y, theta) for each particle, so no GPS is used here.
+# These now use generic raycasting instead of fixed WALL_X / WALL_Y_*.
 
 def expected_front_distance_from_wall_m_pose(x, y, theta):
-    dist = WALL_X - x
-    if dist < 0:
-        dist = 0.0
-    return min(dist, SENSOR_MAX_RANGE_M)
+    return expected_distance_generic(x, y, theta, FRONT_SENSOR_ANGLE)
 
 
 def expected_left_distance_from_wall_m_pose(x, y, theta):
-    """
-    Expected distance from robot to left wall, given pose.
-    """
-    dist = WALL_Y_LEFT - y
-    if dist < 0:
-        dist = 0.0
-    return min(dist, SENSOR_MAX_RANGE_M)
+    return expected_distance_generic(x, y, theta, LEFT_SENSOR_ANGLE)
 
 
 def expected_right_distance_from_wall_m_pose(x, y, theta):
-    """
-    Expected distance from robot to right wall, given pose.
-    """
-    dist = y - WALL_Y_RIGHT
-    if dist < 0:
-        dist = 0.0
-    return min(dist, SENSOR_MAX_RANGE_M)
+    return expected_distance_generic(x, y, theta, RIGHT_SENSOR_ANGLE)
 
 
 # ================== RAW / METERS CONVERSION + GAUSSIAN ==================
@@ -316,7 +379,9 @@ def low_variance_resample(particles):
         new_particles.append(new_p)
 
     return new_particles
-    # ================== POSE ESTIMATION FROM PARTICLES ==================
+
+
+# ================== POSE ESTIMATION FROM PARTICLES ==================
 
 def estimate_pose(particles):
     """
@@ -343,4 +408,3 @@ def estimate_pose(particles):
     theta_hat = math.atan2(sum_sin / n, sum_cos / n)
 
     return x_hat, y_hat, theta_hat
-

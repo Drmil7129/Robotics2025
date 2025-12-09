@@ -149,8 +149,6 @@ class Odometry:
         delta_dist = (delta_right + delta_left) / 2.0
 
         flat_dist = delta_dist * math.cos(pitch_radians)
-  
-
 
         delta_theta = (delta_right - delta_left) / self.config.wheel_distance
         theta2 = self.result.theta + delta_theta / 2.0
