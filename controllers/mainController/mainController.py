@@ -3,35 +3,14 @@
 from controller import Robot, Motor
 import sys, os, random
 
-# Allow imports from ../lib/
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
 import localisation
 import reinforcement_learning as rl
 import odometry  
-import rl_integration   
+import rl_integration
+from rl_integration import RobotState, ROBOT_ACTIONS
 import numpy as np
 import copy
-
-class RobotState:
-    def __init__(self, position_x=0.0, position_y=0.0, heading=0.0, has_cargo=True):
-        self.position_x = position_x
-        self.position_y = position_y
-        self.heading = heading
-        self.has_cargo = has_cargo
-
-    def __repr__(self):
-        return (
-            f"RobotState(x={self.position_x}, y={self.position_y}, "
-            f"heading={self.heading}, cargo={self.has_cargo})"
-        )
-
-
-ROBOT_ACTIONS = {
-    "FORWARD": 0,
-    "LEFT": 1,
-    "RIGHT": 2,
-    "STOP": 3,
-}
 
 MAX_SPEED = 10.0
 
@@ -143,8 +122,7 @@ def main():
         
         state = rl_integration.get_current_state_from_localization(gps, distance_sensors, odom)
         print("The heading is ", state.heading)
-        #bearing = ((np.arctan2(compass.getValues()[0],compass.getValues()[2]) * 180) / np.pi) + 180
-        #print("The bearing is ", bearing)
+        
         if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
                 state.position_y + 24 > 50 or state.position_y + 24 < 0):
             break
