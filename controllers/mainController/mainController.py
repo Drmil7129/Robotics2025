@@ -86,6 +86,7 @@ def main():
         possition_sensor.enable(timestep)
         position_sensors.append(possition_sensor)
         
+    imu = robot.getDevice("imu")
     distance_sensors = localisation.init_distance_sensors(robot, timestep)
     touch_sensors = init_touch_sensors(touch_sensor_names)
     cargo_sensor = robot.getDevice("cargo_sensor")
@@ -94,7 +95,8 @@ def main():
     cargo_sensor.enable(timestep)
     gps.enable(timestep)
     compass.enable(timestep)
-    
+    imu.enable(timestep)
+
     odom = odometry.Odometry()
     left_positions_init = [ps.getValue() for ps in position_sensors[:4]]
     right_positions_init = [ps.getValue() for ps in position_sensors[4:]]
@@ -108,9 +110,10 @@ def main():
 
     while robot.step(timestep) != -1:
 
+        fpy = imu.getRollPitchYaw()
         left_positions = [ps.getValue() for ps in position_sensors[:4]]
         right_positions = [ps.getValue() for ps in position_sensors[4:]]
-        odom.update(left_positions, right_positions)
+        odom.update(left_positions, right_positions, fpy[1])
 
         sensor_readings = localisation.read_sensors(distance_sensors)
         particles = odom.get_particles()

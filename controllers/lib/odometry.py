@@ -89,12 +89,22 @@ class Odometry:
         self.motion_model = ProbabilisticMotionModel()
 
         self.num_particles = 100
-        self.particles = [
-            Particle(0.0, 0.0, 0.0, 1.0 / self.num_particles) 
-            for _ in range(self.num_particles)
-        ]
+        self.particles = []
 
         self.EncoderUnit = 159.23
+
+    def initialize_global(self, map_width, map_height):
+      
+        self.particles = []
+        for _ in range(self.num_particles):
+            p = Particle()
+
+            p.x = random.uniform(0, map_width)
+            p.y = random.uniform(0, map_height)
+
+            p.theta = random.uniform(-math.pi, math.pi)
+            p.weight = 1.0 / self.num_particles
+            self.particles.append(p)
 
     def get_heading(self):
         return self.result.theta
@@ -116,10 +126,7 @@ class Odometry:
         self.state.pos_left_prev = [self.EncoderUnit * p for p in pos_left]
         self.state.pos_right_prev = [self.EncoderUnit * p for p in pos_right]
 
-        self.particles = [
-            Particle(0.0, 0.0, 0.0, 1.0 / self.num_particles) 
-            for _ in range(self.num_particles)
-        ]
+        self.initialize_global(49.0, 49.0)
 
     def update(self, pos_left_list, pos_right_list, pitch_radians=0.0):
 
