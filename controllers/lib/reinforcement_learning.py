@@ -3,12 +3,8 @@ import numpy as np
 import random
 
 
-#TO-DO:
-#Make a separate ruleset for testing
-
-
 #HYPERPARAMETERS
-REWARD_PER_DISTANCE = 1
+REWARD_PER_DISTANCE = 3
 MAX_X = 50
 MAX_Y = 50
 NUM_OF_ACTIONS = 4
@@ -16,8 +12,8 @@ NUM_OF_DIRECTIONS = 4
 LEARNING_RATE = 0.5
 DISCOUNT_FACTOR = 0.5
 EXPLORATION_RATE = 0
-EXPLORATION_RATE_DECAY = 0.995
-MIN_EXPLORATION_RATE = 0.1
+EXPLORATION_RATE_DECAY = 0.999
+MIN_EXPLORATION_RATE = 0.2
 MAX_TIMESTEPS = 300
 MAX_DISCOUNT_EXPONENT = 10
 GOAL_STATE = (20,2)
@@ -46,6 +42,8 @@ def reward_function(prev_distance, next_distance,has_collided,cargo):
         reward -= 1000
     if (cargo == False):
         reward -= 1000
+    if (next_distance == GOAL_STATE):
+        return 1000
     distance_to_goal = math.sqrt((prev_distance[0] - GOAL_STATE[0])**2 + (prev_distance[1] - GOAL_STATE[1])**2)
     new_distance_to_goal = math.sqrt((next_distance[0] - GOAL_STATE[0])**2 + (next_distance[1] - GOAL_STATE[1])**2)
     change_in_distance = distance_to_goal - new_distance_to_goal
@@ -57,10 +55,11 @@ def q_value_action(state_data):
     global EXPLORATION_RATE
     action_choice = -1
     state = state_to_index(state_data)
-    choice = random.randint(0,10)
+    choice = random.randint(1,10)
     if (choice < EXPLORATION_RATE * 10):
         action_choice = policy()
     else:
+        print("The greedy has a choice of : " , Q_table[state[0]][state[1]][state[2]])
         action_choice = np.argmax(Q_table[state[0]][state[1]][state[2]])
     if (EXPLORATION_RATE > MIN_EXPLORATION_RATE):
         EXPLORATION_RATE = EXPLORATION_RATE * EXPLORATION_RATE_DECAY
