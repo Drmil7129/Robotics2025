@@ -66,30 +66,36 @@ def get_action():
 
 
 def check_collision():
-    for sensor in distance_sensors:
-        if (distance_sensors[sensor].getValue() < 50):
+    for sensor in touch_sensors:
+        if (sensor.getValue() > 0):
             return True
 
 
 def check_cargo():
-    if (touch_sensor.getValue() == 0):
+    if (cargo_sensor.getValue() == 0):
         return False
-
+        
+def init_touch_sensors(names):
+    touch_sensors = []
+    for name in names:
+        sensor = robot.getDevice(name)
+        sensor.enable(timestep)
+        touch_sensors.append(sensor)
+    return touch_sensors
 
 def main():
     global state
     global distance_sensors
-    global touch_sensor
+    global touch_sensors
+    global cargo_sensor
     global odom
 
     names = [
         "left motor 1", "left motor 2", "left motor 3", "left motor 4",
         "right motor 1", "right motor 2", "right motor 3", "right motor 4",
     ]
-
-    imu = robot.getDevice("imu")
-    imu.enable(timestep)
-
+    touch_sensor_names = ["collision_sensor_right","collision_sensor_left","collision_sensor_front", "collision_sensor_back"]
+    
     for name in names:
         motor = robot.getDevice(name)
         motor.setPosition(float("inf"))
@@ -100,13 +106,13 @@ def main():
         possition_sensor = motor.getPositionSensor()
         possition_sensor.enable(timestep)
         position_sensors.append(possition_sensor)
-
-    touch_sensor = robot.getDevice("touch_sensor")
-    touch_sensor.enable(timestep)
+        
     distance_sensors = localisation.init_distance_sensors(robot, timestep)
-
+    touch_sensors = init_touch_sensors(touch_sensor_names)
+    cargo_sensor = robot.getDevice("cargo_sensor")
     gps = robot.getDevice("gps")
     compass = robot.getDevice("compass")
+    cargo_sensor.enable(timestep)
     gps.enable(timestep)
     compass.enable(timestep)
     
@@ -123,11 +129,9 @@ def main():
 
     while robot.step(timestep) != -1:
 
-        rpy = imu.getRollPitchYaw()
-
         left_positions = [ps.getValue() for ps in position_sensors[:4]]
         right_positions = [ps.getValue() for ps in position_sensors[4:]]
-        odom.update(left_positions, right_positions, pitch_radians=rpy[1])
+        odom.update(left_positions, right_positions)
 
         sensor_readings = localisation.read_sensors(distance_sensors)
         particles = odom.get_particles()
@@ -138,7 +142,9 @@ def main():
         check_cargo()
         
         state = rl_integration.get_current_state_from_localization(gps, distance_sensors, odom)
-
+        print("The heading is ", state.heading)
+        #bearing = ((np.arctan2(compass.getValues()[0],compass.getValues()[2]) * 180) / np.pi) + 180
+        #print("The bearing is ", bearing)
         if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
                 state.position_y + 24 > 50 or state.position_y + 24 < 0):
             break
@@ -149,6 +155,7 @@ def main():
             rl.q_value_update(previous_state, state, previous_action, has_collided, cargo)
 
         if (has_collided or cargo == False):
+            print("Collision detected")
             break
 
         previous_state = copy.deepcopy(state)
@@ -156,7 +163,6 @@ def main():
 
     rl.save_q_table("../lib/q_table")
     print("Q_table svaed")
-
 
 if __name__ == "__main__":
     main()

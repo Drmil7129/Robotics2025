@@ -4,7 +4,6 @@ import random
 
 
 #TO-DO:
-#Integrate policy
 #Make a separate ruleset for testing
 
 
@@ -16,20 +15,30 @@ NUM_OF_ACTIONS = 4
 NUM_OF_DIRECTIONS = 4
 LEARNING_RATE = 0.5
 DISCOUNT_FACTOR = 0.5
-EXPLORATION_RATE = 0.5
+EXPLORATION_RATE = 0
 EXPLORATION_RATE_DECAY = 0.995
 MIN_EXPLORATION_RATE = 0.1
 MAX_TIMESTEPS = 300
 MAX_DISCOUNT_EXPONENT = 10
 GOAL_STATE = (20,2)
 
+#try to load q-table from file, if it can't, creaste it from scratch
 try:
     Q_table = np.load("../lib/q_table.npy")
+
 except:
     Q_table = np.zeros((MAX_X,MAX_Y,NUM_OF_DIRECTIONS,NUM_OF_ACTIONS))
 
-
-
+#try to load exploration rate value from file, if not set it to default value
+try: 
+    f = open("../lib/exploration_rate.txt","r")
+    EXPLORATION_RATE = float(f.read())
+    print("exploration rate is ", EXPLORATION_RATE)
+except:
+    print("Couldnt load")
+    EXPLORATION_RATE = 0.5
+    
+    
 #calculates immediate reward for reaching a state
 def reward_function(prev_distance, next_distance,has_collided,cargo):
     reward = 0
@@ -49,8 +58,8 @@ def q_value_action(state_data):
     action_choice = -1
     state = state_to_index(state_data)
     choice = random.randint(0,10)
-    if (choice > EXPLORATION_RATE):
-        action_choice = random.randint(0,NUM_OF_ACTIONS-1)
+    if (choice < EXPLORATION_RATE * 10):
+        action_choice = policy()
     else:
         action_choice = np.argmax(Q_table[state[0]][state[1]][state[2]])
     if (EXPLORATION_RATE > MIN_EXPLORATION_RATE):
@@ -65,19 +74,25 @@ def q_value_update(state_data,next_state_data,action,has_collided,cargo):
     next_state = state_to_index(next_state_data)
     action_index = action
     Q_table[state[0]][state[1]][state[2]][action_index] = Q_table[state[0]][state[1]][state[2]][action_index] + LEARNING_RATE * (reward_function(state,next_state,has_collided,cargo) + DISCOUNT_FACTOR * Q_table[state[0]][state[1]][state[2]].max() - Q_table[state[0]][state[1]][state[2]][action_index])
-    print("The value for state ", state, " is ", Q_table[state[0]][state[1]][state[2]][action_index])
+    #print("The value for state ", state, " is ", Q_table[state[0]][state[1]][state[2]][action_index])
 
-#finds how good it is being in this state, by adding the immediate reward and the future discount total reward wehn following the policy    
-def value_function(current_state,previous_state,discount_exponent):
-    if (discount_exponent == MAX_DISCOUNT_EXPONENT):
-        return 0
-    else:
-        reward = reward_function(current_state,previous_state)
-        #action = getActionFromPolicy
-        return reward
+#this policy favours foward movement to make sure the robot isnt stuck going fowards and backwards, or left and right
+def policy():
+   choice = random.randint(1,22) 
+   if (choice <= 9 ):
+       return 0
+   elif (choice <= 14):
+       return 1
+   elif (choice <= 19):
+       return 2
+   else:
+       return 3
     
 def save_q_table(path):
     np.save(path,Q_table)
+    f = open("../lib/exploration_rate.txt","w")
+    f.write(str(EXPLORATION_RATE))
+    
 
 #translates the state data into indexes for the q-table
 def state_to_index(state_data):
