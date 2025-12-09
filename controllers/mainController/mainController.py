@@ -134,6 +134,8 @@ def main():
         
         state = rl_integration.get_current_state_from_localization(gps, distance_sensors, odom)
         print("The heading is ", state.heading)
+        #bearing = ((np.arctan2(compass.getValues()[0],compass.getValues()[2]) * 180) / np.pi) + 180
+        #print("The bearing is ", bearing)
         if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
                 state.position_y + 24 > 50 or state.position_y + 24 < 0):
             break
