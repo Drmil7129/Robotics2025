@@ -66,27 +66,36 @@ def get_action():
 
 
 def check_collision():
-    for sensor in distance_sensors:
-        if (distance_sensors[sensor].getValue() < 100):
+    for sensor in touch_sensors:
+        if (sensor.getValue() > 0):
             return True
 
 
 def check_cargo():
-    if (touch_sensor.getValue() == 0):
+    if (cargo_sensor.getValue() == 0):
         return False
-
+        
+def init_touch_sensors(names):
+    touch_sensors = []
+    for name in names:
+        sensor = robot.getDevice(name)
+        sensor.enable(timestep)
+        touch_sensors.append(sensor)
+    return touch_sensors
 
 def main():
     global state
     global distance_sensors
-    global touch_sensor
+    global touch_sensors
+    global cargo_sensor
     global odom
 
     names = [
         "left motor 1", "left motor 2", "left motor 3", "left motor 4",
         "right motor 1", "right motor 2", "right motor 3", "right motor 4",
     ]
-
+    touch_sensor_names = ["collision_sensor_right","collision_sensor_left","collision_sensor_front", "collision_sensor_back"]
+    
     for name in names:
         motor = robot.getDevice(name)
         motor.setPosition(float("inf"))
@@ -97,13 +106,13 @@ def main():
         possition_sensor = motor.getPositionSensor()
         possition_sensor.enable(timestep)
         position_sensors.append(possition_sensor)
-
-    touch_sensor = robot.getDevice("touch_sensor")
-    touch_sensor.enable(timestep)
+        
     distance_sensors = localisation.init_distance_sensors(robot, timestep)
-
+    touch_sensors = init_touch_sensors(touch_sensor_names)
+    cargo_sensor = robot.getDevice("cargo_sensor")
     gps = robot.getDevice("gps")
     compass = robot.getDevice("compass")
+    cargo_sensor.enable(timestep)
     gps.enable(timestep)
     compass.enable(timestep)
     

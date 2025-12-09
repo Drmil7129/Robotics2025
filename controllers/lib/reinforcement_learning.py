@@ -76,13 +76,14 @@ def q_value_update(state_data,next_state_data,action,has_collided,cargo):
     Q_table[state[0]][state[1]][state[2]][action_index] = Q_table[state[0]][state[1]][state[2]][action_index] + LEARNING_RATE * (reward_function(state,next_state,has_collided,cargo) + DISCOUNT_FACTOR * Q_table[state[0]][state[1]][state[2]].max() - Q_table[state[0]][state[1]][state[2]][action_index])
     #print("The value for state ", state, " is ", Q_table[state[0]][state[1]][state[2]][action_index])
 
+#this policy favours foward movement to make sure the robot isnt stuck going fowards and backwards, or left and right
 def policy():
-   choice = random.randint(0,10) 
-   if (choice < 6):
+   choice = random.randint(1,22) 
+   if (choice <= 9 ):
        return 0
-   elif (choice > 5 and choice < 8):
+   elif (choice <= 14):
        return 1
-   elif (choice > 7 and choice < 9):
+   elif (choice <= 19):
        return 2
    else:
        return 3
