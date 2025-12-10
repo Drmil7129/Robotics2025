@@ -20,7 +20,7 @@ ROBOT_ACTIONS = {
     "FORWARD": 0,
     "LEFT": 1,
     "RIGHT": 2,
-    "STOP": 3,
+    "BACK": 3,
 }
 
 def get_current_state_from_localization(gps, distance_sensors, odom):
@@ -51,3 +51,5 @@ def execute_action_on_robot(action, robot_set_speed_func, max_speed):
         robot_set_speed_func(-max_speed, max_speed)
     elif action == ROBOT_ACTIONS["RIGHT"]:
         robot_set_speed_func(max_speed, -max_speed)
+    elif action == ROBOT_ACTIONS["BACK"]:
+        robot_set_speed_func(-max_speed,-max_speed)

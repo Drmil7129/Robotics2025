@@ -10,6 +10,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Cardboard.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Wall.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/RedBricks.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/traffic/protos/SignPole.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/traffic/protos/DirectionPanel.proto"
 
 WorldInfo {
   info [
@@ -40,8 +42,8 @@ WorldInfo {
   ]
 }
 Viewpoint {
-  orientation -0.11379342529275144 0.04351273466098535 0.9925511061312993 2.4161358729150204
-  position 5.195737384824928 3.909155002981072 12.847604834099233
+  orientation -0.3051659326048581 -0.4265405726988777 0.8514322600296048 4.885543069675904
+  position -19.563769938044963 51.47661497223002 49.871588349631196
   near 1
   follow "moose"
 }
@@ -73,6 +75,32 @@ DEF ELEVATION_GRID Solid {
   contactMaterial "floor"
   boundingObject USE EG
   locked TRUE
+}
+SignPole {
+  translation -1.65 -18.22 1.91
+  rotation 0 0 1 1.5708
+  height 4
+  signBoards [
+    DirectionPanel {
+      translation 0 0 1.7
+      width 2.5
+      height 1
+    }
+  ]
+}
+Solid {
+  translation 8.28 1.17 3.73
+  rotation 0 0 1 1.5708
+  children [
+    Wall {
+      translation -0.32 0.560001 -1.02
+      rotation 0 0 1 -1.5707953071795862
+      size 0.2 5 2.4
+      appearance RedBricks {
+      }
+    }
+  ]
+  name "solid(4)"
 }
 Solid {
   translation 1.28302 15.7634 7.86
@@ -144,22 +172,8 @@ Solid {
   name "solid(2)"
 }
 Solid {
-  translation 13.4607 1.87001 3.98
-  rotation 2.39582e-16 -1.3562e-08 1 1.57079
-  children [
-    Wall {
-      translation 0.309998 0.56 -1.02
-      rotation 0 0 1 -1.5707953071795862
-      size 0.2 5 2.4
-      appearance RedBricks {
-      }
-    }
-  ]
-  name "solid(4)"
-}
-Solid {
-  translation -6.408711065803803 13.535622919782005 5.675796463939693
-  rotation -0.08581884690320174 0.15247502098396473 0.9845742701757672 1.091969191844856
+  translation -6.412033390142018 13.598058470784173 5.918130113684983
+  rotation -0.0739805507038537 0.017771365294957733 0.9971013271945373 1.5104032999846129
   children [
     Shape {
       appearance Cardboard {
@@ -171,23 +185,28 @@ Solid {
   ]
   name "Cargo"
   boundingObject Box {
-    size 0.1 0.1 0.1
+    size 0.5 0.5 0.5
   }
   physics Physics {
     density 1
-    mass 10
+    mass 30
   }
-  linearVelocity -0.004196858151480558 0.033306829284556236 0.00036498441632198524
-  angularVelocity 0.013291642446404496 -0.04305322048240103 -0.026514163602924322
-}
-OilBarrel {
-  translation 3.35 -2.07 2.89
-  height 1.77
-  radius 0.8
 }
 OilBarrel {
   translation -12.34 9.01 7.26
   name "oil barrel(2)"
+  height 1.77
+  radius 0.8
+}
+OilBarrel {
+  translation 3.76 1.22 3.79
+  name "oil barrel(3)"
+  height 1.77
+  radius 0.8
+}
+OilBarrel {
+  translation 3.76 1.22 3.79
+  name "oil barrel(4)"
   height 1.77
   radius 0.8
 }
@@ -246,84 +265,78 @@ Wall {
   size 1 50 10
 }
 Robot {
-  translation -6.633778007664594 13.359683190004509 5.257325907506038
-  rotation -0.15456109408992788 -0.014303087029967647 -0.987879694039278 1.2341295626555535
+  translation -6.316441735565832 13.457759638801386 5.275328826440581
+  rotation -0.1204836511092984 -0.12586333834968705 -0.984704072234316 0.6033164984022014
   children [
     TouchSensor {
-      translation -0.060313728360400276 -0.8396328908327941 0.2775423087079787
-      rotation -1.602759904829652e-05 1.610927061638393e-05 0.9999999997418036 -1.5707941942741632
+      translation -0.062187827315639765 -0.7593171068466491 0.37245193303724644
+      rotation -0.00023508752182713641 0.0002332117419641797 0.9999999451730687 -1.5709917572445216
       children [
         Shape {
           geometry Box {
-            size 0.1 2.8 0.3
+            size 0.05 2.8 0.05
           }
         }
       ]
       name "collision_sensor_right"
       boundingObject Box {
-        size 0.1 2.8 0.3
+        size 0.05 2.8 0.05
       }
       physics Physics {
       }
-      linearVelocity -0.013880948049450842 0.06007096962928194 -0.041672730831242746
-      angularVelocity 0.013422725087304445 -0.037562967545703124 -0.027484605498556133
+      type "force"
     }
     TouchSensor {
-      translation -0.06031676074359993 0.810368331487469 0.27756252622673383
-      rotation -1.602759904829652e-05 1.610927061638393e-05 0.9999999997418036 -1.5707941942741632
+      translation -0.061623688018791256 0.7808474824121916 0.3833389877134987
+      rotation -0.00023508600372020694 0.00023321025068427165 0.9999999451737734 -1.5709917553985875
       children [
         Shape {
           geometry Box {
-            size 0.1 2.8 0.3
+            size 0.05 2.8 0.05
           }
         }
       ]
       name "collision_sensor_left"
       boundingObject Box {
-        size 0.1 2.8 0.3
+        size 0.05 2.8 0.05
       }
       physics Physics {
       }
-      linearVelocity 0.009545836033376462 0.020816369207017047 0.02356019534918883
-      angularVelocity 0.013422725087304415 -0.037562967545703034 -0.027484605498556143
+      type "force"
     }
     TouchSensor {
-      translation 1.5198441470414963 0.00018574890113143283 0.21882237249753533
-      rotation -0.9657742977195867 -0.23103620841323214 0.11790791434961786 8.676132733667111e-07
+      translation 1.519236805377771 0.00018692870576231257 0.3370890763312122
+      rotation 0.7547648158653854 -0.08985054651853153 -0.6498130131214765 3.101920533907699e-05
       children [
         Shape {
           geometry Box {
-            size 0.1 1.4 0.3
+            size 0.05 1.4 0.05
           }
         }
       ]
       name "collision_sensor_front"
       boundingObject Box {
-        size 0.1 1.4 0.3
+        size 0.05 1.4 0.05
       }
       physics Physics {
       }
-      linearVelocity -0.04672428079461522 0.023635413639199434 -0.008467562205671913
-      angularVelocity 0.013666444041699881 -0.03758514295133464 -0.02744469494635327
     }
     TouchSensor {
-      translation -1.5201562956733188 0.00018366579003536998 0.21874476283390543
-      rotation -0.9657742977195867 -0.23103620841323214 0.11790791434961786 8.676132733667111e-07
+      translation -1.5409464488388398 0.0005916239397807388 0.3459876665492434
+      rotation 0.7547648066627495 -0.08985054597872669 -0.6498130238850766 3.101921181488378e-05
       children [
         Shape {
           geometry Box {
-            size 0.1 1.4 0.3
+            size 0.05 1.4 0.05
           }
         }
       ]
       name "collision_sensor_back"
       boundingObject Box {
-        size 0.1 1.4 0.3
+        size 0.05 1.4 0.05
       }
       physics Physics {
       }
-      linearVelocity 0.04429341883812208 0.05737484956767778 -0.009510642158246414
-      angularVelocity 0.013666444041700004 -0.037585142951334596 -0.027444694946353286
     }
     InertialUnit {
       name "imu"
@@ -338,11 +351,16 @@ Robot {
             }
           }
           geometry Box {
-            size 2 0.1 0.3
+            size 2 0.1 0.7
           }
         }
       ]
       name "holder1"
+      boundingObject Box {
+        size 2 0.1 0.7
+      }
+      physics Physics {
+      }
     }
     Solid {
       translation 0 -0.59 0.42
@@ -354,15 +372,20 @@ Robot {
             }
           }
           geometry Box {
-            size 2 0.1 0.3
+            size 2 0.1 0.7
           }
         }
       ]
       name "holder2"
+      boundingObject Box {
+        size 2 0.1 0.7
+      }
+      physics Physics {
+      }
     }
     TouchSensor {
-      translation -2.898209401003271e-05 -0.02989338660307439 0.40902036074904213
-      rotation -0.44003845524605595 -0.8964301794528955 0.052717087084876615 7.559249549873134e-05
+      translation -0.00031672009798100476 -0.02986745764412113 0.4077014732075659
+      rotation -0.4117461529726856 -0.8998263286671455 0.14414466257756448 0.000354870677132037
       children [
         Shape {
           geometry Box {
@@ -376,8 +399,6 @@ Robot {
       }
       physics Physics {
       }
-      linearVelocity -0.00751412495465346 0.03811026155592276 -0.009310706177001995
-      angularVelocity 0.0136357645214047 -0.03749359811208913 -0.027431435930058617
     }
     Solid {
       translation 0.68 -0.0399989 0.42
@@ -390,11 +411,16 @@ Robot {
             }
           }
           geometry Box {
-            size 1.2 0.1 0.3
+            size 1.2 0.1 0.7
           }
         }
       ]
       name "holder3"
+      boundingObject Box {
+        size 1.2 0.1 0.7
+      }
+      physics Physics {
+      }
     }
     Solid {
       translation -0.72 -0.0399999 0.42
@@ -407,11 +433,14 @@ Robot {
             }
           }
           geometry Box {
-            size 1.2 0.1 0.3
+            size 1.2 0.1 0.7
           }
         }
       ]
       name "holder4"
+      boundingObject Box {
+        size 1.2 0.1 0.7
+      }
     }
     DistanceSensor {
       translation 0.600001 -0.7 0.45
@@ -772,7 +801,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 17532.967010388795
+            position 17567.090876224924
             axis 0 -1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -793,8 +822,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation 0.03660020112201558 -1.727702425568784e-10 0.0034714066530489984
-                rotation 0 -0.9999999999999999 0 2.8800033577484627
+                translation 0.0007596457989134282 0.0024817191671093752 0.05297435247200693
+                rotation 0.002022867551220992 0.9999948992933062 -0.002471718883788546 0.6952426801665827
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -901,8 +930,6 @@ Robot {
                   density -1
                   mass 20
                 }
-                linearVelocity -0.025523275495536547 0.0485777173718405 -0.0341187568533536
-                angularVelocity -0.006315459244172666 -0.045049210073622045 -0.024349200944698314
               }
             }
           }
@@ -915,7 +942,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 18004.432399089357
+            position 18056.326275488296
             axis 0 -1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -936,8 +963,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation 0.01283060899241337 -1.4204548648420388e-10 0.03321409416426699
-                rotation 0 0.9999999999999999 0 3.1766912873376385
+                translation -0.024852739578358977 0.0016095808531311658 0.02773868238297917
+                rotation 0.0014709041923293622 0.9999985920399451 0.0008076874297740389 1.5482990746688527
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1044,8 +1071,6 @@ Robot {
                   density -1
                   mass 20
                 }
-                linearVelocity -0.009073737326037709 0.05577418839444901 -0.03454111778486934
-                angularVelocity 0.012663717569588296 -0.03782908027025189 -0.027308096319191316
               }
             }
           }
@@ -1058,7 +1083,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 17135.034731039537
+            position 17154.07027523699
             axis 0 -1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1077,8 +1102,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation 0.0030511320902300194 -1.444735442390605e-10 -0.034295426862545
-                rotation 0 1 0 5.494786946374617
+                translation 0.01535852144134449 -0.0028173458847673867 -0.0295829158372957
+                rotation 0.00035386193866054926 -0.9999997898803376 -0.0005431583646647375 0.974386626687391
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1185,8 +1210,6 @@ Robot {
                   density -1
                   mass 20
                 }
-                linearVelocity 0.017745250446479285 0.060013479202510954 -0.03154135556881749
-                angularVelocity -0.12469129495108575 -0.08663385040132246 -0.007190574554589683
               }
             }
           }
@@ -1199,7 +1222,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 16891.23767808573
+            position 16911.523248046928
             axis 0 -1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1220,8 +1243,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.0157047571696074 -1.7095524995622564e-10 0.029333041511800308
-                rotation 0 -1 0 2.035572387001845
+                translation -0.019039308590095054 -0.006354981443344253 0.05417647562987859
+                rotation -5.89692539211644e-05 0.9999999855947777 -0.00015916366317387913 2.811592364826543
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1328,8 +1351,6 @@ Robot {
                   density -1
                   mass 20
                 }
-                linearVelocity 0.0347211710988091 0.07176120617834851 -0.025267262550842513
-                angularVelocity -0.02049283370306531 -0.05038780703053398 -0.02259942196294255
               }
             }
           }
@@ -1341,7 +1362,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 15537.156533555231
+            position 15547.246366703435
             axis 0 1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1362,8 +1383,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.009085127646459327 2.5791768720747193e-10 -0.035624209004278894
-                rotation 0 1 0 5.1224542072935915
+                translation 0.04789685898196262 -0.002145253210981534 0.0880293957806142
+                rotation 0.0009564004908098585 0.9999990654217081 0.0009769615199657063 2.6458998230959594
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1470,8 +1491,6 @@ Robot {
                   density -1
                   mass 20
                 }
-                linearVelocity -0.00450739317349569 0.020795836514937202 0.02090399788166637
-                angularVelocity 0.01697567529694804 -0.03860425350428919 -0.027023700176752555
               }
             }
           }
@@ -1483,7 +1502,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 14636.9479287293
+            position 14635.471448144532
             axis 0 1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1504,8 +1523,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.03272222435063324 2.1671775485285163e-10 -0.014037631090766955
-                rotation 0 -1 0 2.8738369991367443
+                translation 0.014303063444206288 -0.0018840640470028543 -0.029266199314666785
+                rotation 0.0003579041807223035 0.9999998370499019 -0.00044475247873409363 1.9328685856600527
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1612,8 +1631,6 @@ Robot {
                   density -1
                   mass 20
                 }
-                linearVelocity 0.013746228639482126 0.028703901257557556 0.016443918269262833
-                angularVelocity 0.0139635967925303 -0.037762082499984855 -0.027585653992625785
               }
             }
           }
@@ -1625,7 +1642,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 14572.959702994034
+            position 14562.112885856584
             axis 0 1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1646,8 +1663,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation 0.0264441702281353 2.2719071068875315e-10 0.02204971874718126
-                rotation 4.94065645841247e-324 1 -4.94065645841247e-324 2.2529756445731195
+                translation 0.0119487493808812 9.14952987649528e-05 -0.037726246059261115
+                rotation 6.623043678555007e-06 -0.9999999932368404 0.00011611397117271674 2.310656180722845
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1754,8 +1771,6 @@ Robot {
                   density -1
                   mass 20
                 }
-                linearVelocity 0.027810879556890593 0.034550999536494535 0.012561487077932528
-                angularVelocity 0.014868184234279366 -0.03704736285522206 -0.027636068165970504
               }
             }
           }
@@ -1767,7 +1782,7 @@ Robot {
       children [
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 15242.157670323086
+            position 15242.119331502194
             axis 0 1 0
             suspensionSpringConstant 100000
             suspensionDampingConstant 100000
@@ -1788,8 +1803,8 @@ Robot {
             endPoint Slot {
               type "vehicle wheel"
               endPoint Solid {
-                translation -0.01666345455282968 1.8920287558896807e-10 0.028799211434279114
-                rotation 0 -1 0 0.8498848945910256
+                translation -0.04947025450953718 -0.0041346701591296955 0.0914819030567276
+                rotation 0.0034428069343785286 -0.999994042346499 0.00024970366575365315 0.8882317041132246
                 children [
                   DEF WHEEL_SLOT Group {
                   }
@@ -1896,8 +1911,6 @@ Robot {
                   density -1
                   mass 20
                 }
-                linearVelocity 0.05119060778462228 0.042739649999166664 0.017124689523471782
-                angularVelocity 0.017062215556300126 -0.03656765387070427 -0.028039096896491485
               }
             }
           }
@@ -1970,12 +1983,10 @@ Robot {
     mass 1430
   }
   controller "mainController"
-  linearVelocity 0.0021276900949629553 0.04162525648679358 -0.009510958936732804
-  angularVelocity 0.013625105082942379 -0.03747143373820214 -0.027452650428350017
 }
 CardboardBox {
-  translation 8.884991426645534 11.901084442100123 9.425416957637058
-  rotation 0.7878217183988475 0.46296614249836204 0.40620104741282126 1.9912380180142568
+  translation 8.879088368633152 11.880224076091379 9.42239484964896
+  rotation 0.7961020644690473 0.45800531301195296 0.39554094124495304 1.9748400239872757
   name "robot cardboard payload"
   size 1.2 0.6 1
   mass 50

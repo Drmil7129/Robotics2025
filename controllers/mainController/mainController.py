@@ -43,17 +43,20 @@ def get_action():
     rl_integration.execute_action_on_robot(index, robot_set_speed, MAX_SPEED)
     return index
 
-
 def check_collision():
     for sensor in touch_sensors:
         if (sensor.getValue() > 0):
+            print("collisons dfetedcx as sensor: ", sensor.getName())
             return True
 
 
 def check_cargo():
     if (cargo_sensor.getValue() == 0):
+        print("Cargo fell off")
         return False
-        
+    else:
+        return True
+  
 def init_touch_sensors(names):
     touch_sensors = []
     for name in names:
@@ -104,10 +107,12 @@ def main():
 
     previous_action = None
     previous_state = None
-    count = 0
+    collision_count = 0
+    cargo_count = 0
     has_collided = False
     cargo = True
-
+    goal_reached = False
+    progress = True
     while robot.step(timestep) != -1:
 
         fpy = imu.getRollPitchYaw()
@@ -120,25 +125,20 @@ def main():
         localisation.update_particle_weights(particles, sensor_readings)
         particles = localisation.low_variance_resample(particles)
         odom.particles = particles
-
-        check_cargo()
         
         state = rl_integration.get_current_state_from_localization(gps, distance_sensors, odom)
-        print("The heading is ", state.heading)
-        
-        #if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
-                #state.position_y + 24 > 50 or state.position_y + 24 < 0):
-            #break
-
+            
         if (previous_action != None and previous_state != None):
             has_collided = check_collision()
             cargo = check_cargo()
-            rl.q_value_update(previous_state, state, previous_action, has_collided, cargo)
+            goal_reached = rl.q_value_update(previous_state, state, previous_action, has_collided, cargo)
+        
 
-        if (has_collided or cargo == False):
-            print("Collision detected")
+            
+        if (has_collided or cargo == False or goal_reached):
+            print("Collison or no cargo detected or goal reached")
             break
-
+            
         previous_state = copy.deepcopy(state)
         previous_action = get_action()
 
