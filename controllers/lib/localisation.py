@@ -9,11 +9,11 @@ SENSOR_MAX_RAW = 1000.0
 
 # --- Map in odometry frame ---
 # Map size matches Odometry.initialize_global(49, 49)
+# Coordinates here are in the same frame as your particles (odom.particles)
 W_LEFT   = 0.0
 W_RIGHT  = 49.0
 H_BOTTOM = 0.0
 H_TOP    = 49.0
-    
 
 # Four outer walls as line segments in odometry (x, y) plane
 WALL_SEGMENTS = [
@@ -23,17 +23,75 @@ WALL_SEGMENTS = [
     ((W_RIGHT, H_BOTTOM), (W_RIGHT, H_TOP   )),  # right wall
 ]
 
-# Sensor directions relative to robot heading (radians)
-FRONT_SENSOR_ANGLE = 0.0
-LEFT_SENSOR_ANGLE  = +math.pi / 2.0
-RIGHT_SENSOR_ANGLE = -math.pi / 2.0
+# ------------------ INTERIOR OBSTACLES ------------------
 
-SENSOR_NAMES = [
-    "ds_front1", "ds_front2", "ds_front3",
-    "ds_left1", "ds_left2",
-    "ds_right1", "ds_right2",
-    "ds_back1", "ds_back2", "ds_back3",
+OBSTACLE_SEGMENTS = [
+   # solid(1) wall
+    ((12.78, 26.58), (17.78, 26.58)),
+
+    # solid(5) wall
+    ((7.26, 28.21), (7.26, 23.21)),
+
+    # solid(6) wall: translation -8.48 -7.02 6.39, rot -1.57
+    # child:        translation 0.31 0.56 -1.02, rot -1.57
+    ((16.58, 19.67), (16.58, 14.67)),
+
+    # solid(2) wall: translation 1.8 -12.6 4.59, rot -0.785
+    # child:         translation 0.31 0.56 -1.02, rot -1.57
+    ((25.15, 13.84), (28.68, 10.31)),
+
+    # solid(4) wall: translation 13.5 1.87 3.98, rot +1.57
+    # child:         translation 0.31 0.56 -1.02, rot -1.57
+    ((37.44, 24.18), (37.44, 29.18)),
+
+     # solid(3)
+    ((24.63, 42.24), (28.16, 38.71)),
+
+    # barrels
+    #oilbarrel
+    ((27.05, 23.23), (28.65, 23.23)),
+    ((28.65, 23.23), (28.65, 21.63)),
+    ((28.65, 21.63), (27.05, 21.63)),
+    ((27.05, 21.63), (27.05, 23.23)),
+    #oilbarrel(2)
+    ((11.40, 34.31), (13.00, 34.31)),
+    ((13.00, 34.31), (13.00, 32.71)),
+    ((13.00, 32.71), (11.40, 32.71)),
+    ((11.40, 32.71), (11.40, 34.31)),
 ]
+
+
+
+# All segments in the world
+ALL_SEGMENTS = WALL_SEGMENTS + OBSTACLE_SEGMENTS
+
+# ------------------ SENSOR CONFIGURATION ------------------
+# One entry per sensor: direction + (optional) offset in robot frame.
+# dx, dy are in the *robot* coordinate frame:
+#   x = forward, y = left  (typical mobile-robot convention)
+#
+# For now we keep dx = dy = 0 for all sensors; this assumes all sensors
+# are at the robot center. You can refine these later if you want.
+
+SENSOR_CONFIG = {
+    # front centre (straight ahead)
+    "ds_front1": {"angle": 0.0,      "dx": 1.55,  "dy": 0.0},
+    "ds_front2": {"angle": -0.4,     "dx": 1.35,  "dy": -0.65},
+    "ds_front3": {"angle": +0.4,     "dx": 1.35,  "dy": +0.65},
+
+    # sides
+    "ds_left1":  {"angle": +math.pi/2, "dx": 0.60,  "dy": 0.62},
+    "ds_left2":  {"angle": +math.pi/2, "dx": -0.65, "dy": 0.62},
+    "ds_right1": {"angle": -math.pi/2, "dx": 0.60,  "dy": -0.70},
+    "ds_right2": {"angle": -math.pi/2, "dx": -0.66, "dy": -0.70},
+
+    # back
+    "ds_back1":  {"angle":  math.pi,   "dx": -1.53,   "dy": 0.03},
+    "ds_back2":  {"angle":  math.pi-0.5, "dx": -1.46, "dy": 0.66},
+    "ds_back3":  {"angle": -math.pi+0.5, "dx": -1.46, "dy": -0.64},
+}
+
+SENSOR_NAMES = list(SENSOR_CONFIG.keys())
 
 
 # ================== DEVICE INITIALISATION / READING ==================
@@ -73,7 +131,7 @@ def compute_simple_likelihoods(readings):
     return {name: simple_likelihood(val) for name, val in readings.items()}
 
 
-# ================== RAYCAST GEOMETRY WITH WALL SEGMENTS ==================
+# ================== RAYCAST GEOMETRY WITH WALL + OBSTACLE SEGMENTS ==================
 
 def ray_segment_intersection(ray_origin, ray_dir, p1, p2):
     """
@@ -111,42 +169,64 @@ def ray_segment_intersection(ray_origin, ray_dir, p1, p2):
     return None
 
 
-def expected_distance_generic(x, y, theta, sensor_angle,
-                              max_range=SENSOR_MAX_RANGE_M):
+def _cast_ray_from_origin(origin, beam_theta, max_range=SENSOR_MAX_RANGE_M):
     """
-    Cast a ray from (x, y) in direction (theta + sensor_angle) and return
-    distance to nearest wall segment, capped at max_range.
+    Low-level raycast from 'origin' in direction 'beam_theta'
+    against ALL_SEGMENTS (outer walls + obstacles).
     """
-    beam_theta = theta + sensor_angle
     dir_x = math.cos(beam_theta)
     dir_y = math.sin(beam_theta)
 
-    origin = (x, y)
-    ray_dir = (dir_x, dir_y)
-
     closest = max_range  # default if no hit
 
-    for (p1, p2) in WALL_SEGMENTS:
-        t = ray_segment_intersection(origin, ray_dir, p1, p2)
+    for (p1, p2) in ALL_SEGMENTS:
+        t = ray_segment_intersection(origin, (dir_x, dir_y), p1, p2)
         if t is not None and 0.0 <= t < closest:
             closest = t
 
     return closest
 
 
-# ================== GEOMETRY: EXPECTED DISTANCES (POSE-BASED) ==================
-# These now use generic raycasting instead of fixed WALL_X / WALL_Y_*.
+def expected_distance_generic(x, y, theta, sensor_angle,
+                              max_range=SENSOR_MAX_RANGE_M):
+    """
+    OLD-style helper (still used by some functions):
+    cast a ray from robot center with orientation (theta + sensor_angle).
+    """
+    beam_theta = theta + sensor_angle
+    origin = (x, y)
+    return _cast_ray_from_origin(origin, beam_theta, max_range)
 
-def expected_front_distance_from_wall_m_pose(x, y, theta):
-    return expected_distance_generic(x, y, theta, FRONT_SENSOR_ANGLE)
 
+def expected_distance_for_sensor(sensor_name, x, y, theta,
+                                 max_range=SENSOR_MAX_RANGE_M):
+    """
+    NEW: full per-sensor beam model.
 
-def expected_left_distance_from_wall_m_pose(x, y, theta):
-    return expected_distance_generic(x, y, theta, LEFT_SENSOR_ANGLE)
+    - Uses per-sensor angle from SENSOR_CONFIG.
+    - If you set dx, dy in SENSOR_CONFIG, it will also use the
+      proper sensor position on the robot body.
+    """
+    cfg = SENSOR_CONFIG.get(sensor_name, None)
+    if cfg is None:
+        # Unknown sensor: just return max range
+        return max_range
 
+    dtheta = cfg["angle"]
+    dx = cfg["dx"]
+    dy = cfg["dy"]
 
-def expected_right_distance_from_wall_m_pose(x, y, theta):
-    return expected_distance_generic(x, y, theta, RIGHT_SENSOR_ANGLE)
+    # Transform sensor offset from robot frame to world/map frame
+    cos_t = math.cos(theta)
+    sin_t = math.sin(theta)
+
+    sx = x + cos_t * dx - sin_t * dy
+    sy = y + sin_t * dx + cos_t * dy
+
+    beam_theta = theta + dtheta
+    origin = (sx, sy)
+
+    return _cast_ray_from_origin(origin, beam_theta, max_range)
 
 
 # ================== RAW / METERS CONVERSION + GAUSSIAN ==================
@@ -163,144 +243,57 @@ def gaussian_likelihood(error, sigma):
     return math.exp(-(error ** 2) / (2 * sigma ** 2))
 
 
-# ================== SENSOR GROUPING HELPERS ==================
+# ================== PER-SENSOR LIKELIHOOD ==================
 
-def _average_of_keys(readings, keys):
-    vals = [readings[k] for k in keys if k in readings]
-    if not vals:
-        return None
-    return sum(vals) / len(vals)
-
-
-def get_front_reading(readings):
-    # average of the three front sensors
-    return _average_of_keys(readings, ["ds_front1", "ds_front2", "ds_front3"])
-
-
-def get_left_reading(readings):
-    # average of the left sensors
-    return _average_of_keys(readings, ["ds_left1", "ds_left2"])
-
-
-def get_right_reading(readings):
-    # average of the right sensors
-    return _average_of_keys(readings, ["ds_right1", "ds_right2"])
-
-
-# ================== POSE-BASED MEASUREMENT MODELS ==================
-
-def compute_front_likelihood_from_pose(readings, x, y, theta, sigma=100.0):
+def compute_single_sensor_likelihood(sensor_name, readings, x, y, theta, sigma):
     """
-    Front sensor likelihood given a pose (x, y, theta).
-    Uses the *average* of the front sensors.
+    Compute likelihood for ONE distance sensor at pose (x, y, theta).
     """
-    z_front = get_front_reading(readings)
-    if z_front is None:
+    if sensor_name not in readings:
         return None
 
-    dist_expected_m = expected_front_distance_from_wall_m_pose(x, y, theta)
+    z_meas = readings[sensor_name]
+
+    dist_expected_m = expected_distance_for_sensor(sensor_name, x, y, theta)
     z_expected_raw = distance_m_to_raw(dist_expected_m)
 
-    error = z_front - z_expected_raw
+    error = z_meas - z_expected_raw
     lik = gaussian_likelihood(error, sigma)
 
-    return {
-        "measured_raw": z_front,
-        "expected_raw": z_expected_raw,
-        "error": error,
-        "likelihood": lik,
-    }
+    return lik, z_meas, z_expected_raw, error
 
 
-def compute_left_likelihood_from_pose(readings, x, y, theta, sigma=100.0):
-    """
-    Left sensor likelihood given a pose (x, y, theta).
-    Uses the *average* of the left sensors.
-    """
-    z_left = get_left_reading(readings)
-    if z_left is None:
-        return None
-
-    dist_expected_m = expected_left_distance_from_wall_m_pose(x, y, theta)
-    z_expected_raw = distance_m_to_raw(dist_expected_m)
-
-    error = z_left - z_expected_raw
-    lik = gaussian_likelihood(error, sigma)
-
-    return {
-        "measured_raw": z_left,
-        "expected_raw": z_expected_raw,
-        "error": error,
-        "likelihood": lik,
-    }
-
-
-def compute_right_likelihood_from_pose(readings, x, y, theta, sigma=100.0):
-    """
-    Right sensor likelihood given a pose (x, y, theta).
-    Uses the *average* of the right sensors.
-    """
-    z_right = get_right_reading(readings)
-    if z_right is None:
-        return None
-
-    dist_expected_m = expected_right_distance_from_wall_m_pose(x, y, theta)
-    z_expected_raw = distance_m_to_raw(dist_expected_m)
-
-    error = z_right - z_expected_raw
-    lik = gaussian_likelihood(error, sigma)
-
-    return {
-        "measured_raw": z_right,
-        "expected_raw": z_expected_raw,
-        "error": error,
-        "likelihood": lik,
-    }
-
-
-# ================== COMBINED SENSOR WEIGHT ==================
-
-def combined_weight(front_info, left_info, right_info, eps=1e-9):
-    """
-    Multiply the three sensor likelihoods together, with clamping so
-    we never hit exactly zero.
-    """
-    w = 1.0
-    for info in (front_info, left_info, right_info):
-        if info is None:
-            continue
-        lik = info.get("likelihood", None)
-        if lik is None:
-            continue
-        # clamp to [eps, 1.0] to avoid zeroing everything
-        lik = max(min(lik, 1.0), eps)
-        w *= lik
-    return w
-
+# ================== PARTICLE WEIGHT: ALL SENSORS ==================
 
 def compute_sensor_weight_for_pose(readings, x, y, theta,
                                    sigma_front=100.0, sigma_side=100.0,
                                    eps=1e-9):
-    """
-    For a single pose (x, y, theta), compute all three sensor likelihoods
-    and return a combined weight.
-    This is what we will use for each *particle*.
-    """
-    front_info = compute_front_likelihood_from_pose(
-        readings, x, y, theta, sigma=sigma_front
-    )
-    left_info = compute_left_likelihood_from_pose(
-        readings, x, y, theta, sigma=sigma_side
-    )
-    right_info = compute_right_likelihood_from_pose(
-        readings, x, y, theta, sigma=sigma_side
-    )
+    
+    likelihoods = []
+    
+    for sname in SENSOR_NAMES:
+        res = compute_single_sensor_likelihood(sname, readings, x, y, theta, sigma_front)
+        
+        if res is not None:
+            lik = res[0]
+            # Ensure likelihood is never exactly 0 to avoid log(0) error
+            likelihoods.append(max(lik, eps))
 
-    w = combined_weight(front_info, left_info, right_info, eps=eps)
-    return w, front_info, left_info, right_info
+    # 2. Compute Geometric Mean
+    if not likelihoods:
+        return eps, None, None, None
 
+    # Sum of logs = Log of product
+    sum_log_likelihood = sum(math.log(p) for p in likelihoods)
+    
+    # Average the logs (this is the 1/N step)
+    avg_log_likelihood = sum_log_likelihood / len(likelihoods)
+    
+    # Convert back to normal probability
+    w = math.exp(avg_log_likelihood)
 
-# ================== PARTICLE WEIGHT UPDATE (USES ODOMETRY POSES) ==================
+    return w, None, None, None
+
 
 def update_particle_weights(particles, readings,
                             sigma_front=100.0, sigma_side=100.0,
@@ -308,10 +301,9 @@ def update_particle_weights(particles, readings,
     """
     Given:
       - particles: list of objects with attributes x, y, theta, weight
-                   (these come from your Odometry.motion_model.prediction_step)
       - readings: current sensor readings dict
 
-    Update each particle's weight based on the sensor model,
+    Update each particle's weight based on *all* distance sensors,
     then normalise so weights sum to 1.0.
 
     If all weights would be zero (numerical problem), we reset
