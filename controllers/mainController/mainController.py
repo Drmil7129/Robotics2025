@@ -34,10 +34,6 @@ def robot_set_speed(left, right):
         motors[i + 4].setVelocity(right)
 
 
-def run_autopilot():
-    robot_set_speed(MAX_SPEED, MAX_SPEED)
-
-
 def get_action():
     index = rl.q_value_action(state)
     rl_integration.execute_action_on_robot(index, robot_set_speed, MAX_SPEED)
@@ -46,7 +42,7 @@ def get_action():
 def check_collision():
     for sensor in touch_sensors:
         if (sensor.getValue() > 0):
-            print("collisons dfetedcx as sensor: ", sensor.getName())
+            print("collisons detected at sensor: ", sensor.getName())
             return True
 
 
@@ -76,7 +72,7 @@ def main():
         "left motor 1", "left motor 2", "left motor 3", "left motor 4",
         "right motor 1", "right motor 2", "right motor 3", "right motor 4",
     ]
-    touch_sensor_names = ["collision_sensor_right","collision_sensor_left","collision_sensor_front", "collision_sensor_back"]
+    touch_sensor_names = ["collision_sensor_front", "collision_sensor_back"]
     
     for name in names:
         motor = robot.getDevice(name)

@@ -76,9 +76,9 @@ def q_value_update(state_data,next_state_data,action,has_collided,cargo):
     state = state_to_index(state_data)
     next_state = state_to_index(next_state_data)
     action_index = action
-    reward,goal,progress = reward_function(state,next_state,has_collided,cargo)
+    reward,goal = reward_function(state,next_state,has_collided,cargo)
     Q_table[state[0]][state[1]][state[2]][action_index] = Q_table[state[0]][state[1]][state[2]][action_index] + LEARNING_RATE * (reward + DISCOUNT_FACTOR * Q_table[state[0]][state[1]][state[2]].max() - Q_table[state[0]][state[1]][state[2]][action_index])
-    return goal,progress
+    return goal
 
 #this policy favours foward movement to make sure the robot isnt stuck going fowards and backwards, or left and right
 def policy():
