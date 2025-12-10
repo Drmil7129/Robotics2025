@@ -11,10 +11,10 @@ SENSOR_MAX_RAW = 1000.0
 # Robot start (world frame): x_r = -6.49974, y_r = 14.0697
 # Walls (world frame): x = ±24.5, y = ±24.5
 # Convert to odometry frame: x_odo = x_world - x_r, y_odo = y_world - y_r
-W_LEFT   = -24.5 - (-6.49974)
-W_RIGHT  =  24.5 - (-6.49974) 
-H_TOP    =  24.5 - 14.0697     
-H_BOTTOM = -24.5 - 14.0697      
+W_LEFT   = -24.5 - (-6.63244)
+W_RIGHT  =  24.5 - (-6.63244) 
+H_TOP    =  24.5 - 13.2323   
+H_BOTTOM = -24.5 - 13.2323      
 
 # Four outer walls as line segments in odometry (x, y) plane
 WALL_SEGMENTS = [

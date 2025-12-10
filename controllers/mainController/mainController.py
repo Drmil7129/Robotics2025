@@ -122,13 +122,19 @@ def main():
         odom.particles = particles
 
         check_cargo()
-        
+        #rl_integration.execute_action_on_robot(3, robot_set_speed, MAX_SPEED)
         state = rl_integration.get_current_state_from_localization(gps, distance_sensors, odom)
-        print("The heading is ", state.heading)
+        state.position_x = gps.getValues()[0]
+        state.position_y = gps.getValues()[1]
         
-        if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
-                state.position_y + 24 > 50 or state.position_y + 24 < 0):
-            break
+        state.heading = np.degrees(np.arctan2(compass.getValues()[0],compass.getValues()[1]))
+       
+        if (state.heading < 0):
+            state.heading += 360
+
+        #if (state.position_x + 24 > 50 or state.position_x + 24 < 0 or
+                #state.position_y + 24 > 50 or state.position_y + 24 < 0):
+            #break
 
         if (previous_action != None and previous_state != None):
             has_collided = check_collision()

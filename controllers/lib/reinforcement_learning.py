@@ -11,12 +11,12 @@ NUM_OF_ACTIONS = 4
 NUM_OF_DIRECTIONS = 4
 LEARNING_RATE = 0.5
 DISCOUNT_FACTOR = 0.5
-EXPLORATION_RATE = 0
+EXPLORATION_RATE = 0.6
 EXPLORATION_RATE_DECAY = 0.999
 MIN_EXPLORATION_RATE = 0.2
 MAX_TIMESTEPS = 300
 MAX_DISCOUNT_EXPONENT = 10
-GOAL_STATE = (20,2)
+GOAL_STATE = (21,5)
 
 #try to load q-table from file, if it can't, creaste it from scratch
 try:
@@ -43,7 +43,8 @@ def reward_function(prev_distance, next_distance,has_collided,cargo):
     if (cargo == False):
         reward -= 1000
     if (next_distance == GOAL_STATE):
-        return 1000
+        print("GOAL REACHED")
+        return 10000
     distance_to_goal = math.sqrt((prev_distance[0] - GOAL_STATE[0])**2 + (prev_distance[1] - GOAL_STATE[1])**2)
     new_distance_to_goal = math.sqrt((next_distance[0] - GOAL_STATE[0])**2 + (next_distance[1] - GOAL_STATE[1])**2)
     change_in_distance = distance_to_goal - new_distance_to_goal
