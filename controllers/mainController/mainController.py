@@ -92,7 +92,7 @@ def main():
     distance_sensors = localisation.init_distance_sensors(robot, timestep)
     touch_sensors = init_touch_sensors(touch_sensor_names)
 
-
+    #initialises the imu, cargo sensor, gps and compass
     imu = robot.getDevice("imu")
     cargo_sensor = robot.getDevice("cargo_sensor")
     gps = robot.getDevice("gps")
@@ -102,6 +102,7 @@ def main():
     compass.enable(timestep)
     imu.enable(timestep)
 
+    #initialises odometry
     odom = odometry.Odometry()
     left_positions_init = [ps.getValue() for ps in position_sensors[:4]]
     right_positions_init = [ps.getValue() for ps in position_sensors[4:]]
@@ -116,7 +117,7 @@ def main():
     goal_reached = False
     progress = True
     while robot.step(timestep) != -1:
-
+        #read imu readings and update odometry
         fpy = imu.getRollPitchYaw()
         left_positions = [ps.getValue() for ps in position_sensors[:4]]
         right_positions = [ps.getValue() for ps in position_sensors[4:]]
