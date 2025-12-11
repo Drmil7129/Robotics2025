@@ -8,8 +8,6 @@ SENSOR_MAX_RANGE_M = 10.0
 SENSOR_MAX_RAW = 1000.0
 
 # --- Map in odometry frame ---
-# Map size matches Odometry.initialize_global(49, 49)
-# Coordinates here are in the same frame as your particles (odom.particles)
 W_LEFT   = 0.0
 W_RIGHT  = 49.0
 H_BOTTOM = 0.0
@@ -32,27 +30,24 @@ OBSTACLE_SEGMENTS = [
     # solid(5) wall
     ((7.26, 28.21), (7.26, 23.21)),
 
-    # solid(6) wall: translation -8.48 -7.02 6.39, rot -1.57
-    # child:        translation 0.31 0.56 -1.02, rot -1.57
+    # solid(6) wall
     ((16.58, 19.67), (16.58, 14.67)),
 
-    # solid(2) wall: translation 1.8 -12.6 4.59, rot -0.785
-    # child:         translation 0.31 0.56 -1.02, rot -1.57
+    # solid(2) wall
     ((25.15, 13.84), (28.68, 10.31)),
 
-    # solid(4) wall: translation 13.5 1.87 3.98, rot +1.57
-    # child:         translation 0.31 0.56 -1.02, rot -1.57
+    # solid(4) wall
     ((37.44, 24.18), (37.44, 29.18)),
 
      # solid(3)
     ((24.63, 42.24), (28.16, 38.71)),
 
-    # barrels
     #oilbarrel
     ((27.05, 23.23), (28.65, 23.23)),
     ((28.65, 23.23), (28.65, 21.63)),
     ((28.65, 21.63), (27.05, 21.63)),
     ((27.05, 21.63), (27.05, 23.23)),
+    
     #oilbarrel(2)
     ((11.40, 34.31), (13.00, 34.31)),
     ((13.00, 34.31), (13.00, 32.71)),
@@ -66,12 +61,6 @@ OBSTACLE_SEGMENTS = [
 ALL_SEGMENTS = WALL_SEGMENTS + OBSTACLE_SEGMENTS
 
 # ------------------ SENSOR CONFIGURATION ------------------
-# One entry per sensor: direction + (optional) offset in robot frame.
-# dx, dy are in the *robot* coordinate frame:
-#   x = forward, y = left  (typical mobile-robot convention)
-#
-# For now we keep dx = dy = 0 for all sensors; this assumes all sensors
-# are at the robot center. You can refine these later if you want.
 
 SENSOR_CONFIG = {
     # front centre (straight ahead)
@@ -116,33 +105,14 @@ def read_sensors(distance_sensors):
     return readings
 
 
-# ================== SIMPLE (DEBUG) LIKELIHOODS ==================
-
-def simple_likelihood(distance: float) -> float:
-    if distance <= 0:
-        return 0.0
-
     max_range = SENSOR_MAX_RAW
     d = min(distance, max_range) / max_range  # normalise to [0, 1]
     return math.exp(-d)
 
 
-def compute_simple_likelihoods(readings):
-    return {name: simple_likelihood(val) for name, val in readings.items()}
-
-
 # ================== RAYCAST GEOMETRY WITH WALL + OBSTACLE SEGMENTS ==================
 
 def ray_segment_intersection(ray_origin, ray_dir, p1, p2):
-    """
-    Intersection between a ray and a segment.
-
-    ray_origin: (x0, y0)
-    ray_dir:    (dx, dy)   -- direction (need not be normalised)
-    p1, p2:     endpoints of segment
-
-    Returns distance t >= 0 along ray if intersection exists, else None.
-    """
     x0, y0 = ray_origin
     dx, dy = ray_dir
     x1, y1 = p1
@@ -170,10 +140,6 @@ def ray_segment_intersection(ray_origin, ray_dir, p1, p2):
 
 
 def _cast_ray_from_origin(origin, beam_theta, max_range=SENSOR_MAX_RANGE_M):
-    """
-    Low-level raycast from 'origin' in direction 'beam_theta'
-    against ALL_SEGMENTS (outer walls + obstacles).
-    """
     dir_x = math.cos(beam_theta)
     dir_y = math.sin(beam_theta)
 
@@ -187,36 +153,16 @@ def _cast_ray_from_origin(origin, beam_theta, max_range=SENSOR_MAX_RANGE_M):
     return closest
 
 
-def expected_distance_generic(x, y, theta, sensor_angle,
-                              max_range=SENSOR_MAX_RANGE_M):
-    """
-    OLD-style helper (still used by some functions):
-    cast a ray from robot center with orientation (theta + sensor_angle).
-    """
-    beam_theta = theta + sensor_angle
-    origin = (x, y)
-    return _cast_ray_from_origin(origin, beam_theta, max_range)
-
-
 def expected_distance_for_sensor(sensor_name, x, y, theta,
                                  max_range=SENSOR_MAX_RANGE_M):
-    """
-    NEW: full per-sensor beam model.
-
-    - Uses per-sensor angle from SENSOR_CONFIG.
-    - If you set dx, dy in SENSOR_CONFIG, it will also use the
-      proper sensor position on the robot body.
-    """
     cfg = SENSOR_CONFIG.get(sensor_name, None)
     if cfg is None:
-        # Unknown sensor: just return max range
         return max_range
 
     dtheta = cfg["angle"]
     dx = cfg["dx"]
     dy = cfg["dy"]
 
-    # Transform sensor offset from robot frame to world/map frame
     cos_t = math.cos(theta)
     sin_t = math.sin(theta)
 
@@ -237,18 +183,13 @@ def distance_m_to_raw(dist_m):
 
 
 def gaussian_likelihood(error, sigma):
-    """
-    Likelihood of seeing this error under N(0, sigma^2)
-    """
+
     return math.exp(-(error ** 2) / (2 * sigma ** 2))
 
 
 # ================== PER-SENSOR LIKELIHOOD ==================
 
 def compute_single_sensor_likelihood(sensor_name, readings, x, y, theta, sigma):
-    """
-    Compute likelihood for ONE distance sensor at pose (x, y, theta).
-    """
     if sensor_name not in readings:
         return None
 
@@ -266,13 +207,14 @@ def compute_single_sensor_likelihood(sensor_name, readings, x, y, theta, sigma):
 # ================== PARTICLE WEIGHT: ALL SENSORS ==================
 
 def compute_sensor_weight_for_pose(readings, x, y, theta,
-                                   sigma_front=100.0, sigma_side=100.0,
+                                   sigma_all=100.0,
                                    eps=1e-9):
     
     likelihoods = []
     
     for sname in SENSOR_NAMES:
-        res = compute_single_sensor_likelihood(sname, readings, x, y, theta, sigma_front)
+        # Now uses the single parameter: sigma_all
+        res = compute_single_sensor_likelihood(sname, readings, x, y, theta, sigma_all)
         
         if res is not None:
             lik = res[0]
@@ -298,17 +240,6 @@ def compute_sensor_weight_for_pose(readings, x, y, theta,
 def update_particle_weights(particles, readings,
                             sigma_front=100.0, sigma_side=100.0,
                             eps=1e-9):
-    """
-    Given:
-      - particles: list of objects with attributes x, y, theta, weight
-      - readings: current sensor readings dict
-
-    Update each particle's weight based on *all* distance sensors,
-    then normalise so weights sum to 1.0.
-
-    If all weights would be zero (numerical problem), we reset
-    to uniform weights.
-    """
     total_w = 0.0
 
     for p in particles:
@@ -322,11 +253,9 @@ def update_particle_weights(particles, readings,
         total_w += w
 
     if total_w > 0.0:
-        # Normalise
         for p in particles:
             p.weight /= total_w
     else:
-        # Fallback: uniform weights
         n = len(particles)
         if n > 0:
             uniform = 1.0 / n
@@ -336,16 +265,7 @@ def update_particle_weights(particles, readings,
 
 # ================== LOW-VARIANCE RESAMPLING ==================
 
-def low_variance_resample(particles):
-    """
-    Standard low-variance (systematic) resampling.
-
-    - Input: list of particles with .x, .y, .theta, .weight
-    - Output: new list of particles (same length), approximately resampled
-      according to weights, with equal weights 1/N.
-
-    We assume weights are already normalised.
-    """
+def low_variance_resample(particles)
     N = len(particles)
     if N == 0:
         return []
@@ -375,10 +295,7 @@ def low_variance_resample(particles):
 # ================== POSE ESTIMATION FROM PARTICLES ==================
 
 def estimate_pose(particles):
-    """
-    Estimate (x, y, theta) from a list of particles.
-    Simple mean for x,y and circular mean for theta.
-    """
+ 
     n = len(particles)
     if n == 0:
         return 0.0, 0.0, 0.0
