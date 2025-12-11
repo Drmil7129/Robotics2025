@@ -38,18 +38,18 @@ except:
 #collisions and dropping cargo gives a negative reward
 #getting closer to the goal gives a reward
 #states that are closer to the goal are valued more
-def reward_function(prev_distance, next_distance,has_collided,cargo):
+def reward_function(prev_state, next_state,has_collided,cargo):
     reward = 0
     if (has_collided):
         reward -= 1000
     if (cargo == False):
         reward -= 1000
     for state in GOAL_STATES:
-        if (state[0] == next_distance[0] and state[1] == next_distance[1]):
+        if (state[0] == next_state[0] and state[1] == next_state[1]):
             print("GOAL REACHED")
             return 10000, True
-    distance_to_goal = math.sqrt((prev_distance[0] - GOAL_STATE[0])**2 + (prev_distance[1] - GOAL_STATE[1])**2)
-    new_distance_to_goal = math.sqrt((next_distance[0] - GOAL_STATE[0])**2 + (next_distance[1] - GOAL_STATE[1])**2)
+    distance_to_goal = math.sqrt((prev_state[0] - GOAL_STATE[0])**2 + (prev_state[1] - GOAL_STATE[1])**2)
+    new_distance_to_goal = math.sqrt((next_state[0] - GOAL_STATE[0])**2 + (next_state[1] - GOAL_STATE[1])**2)
     change_in_distance = distance_to_goal - new_distance_to_goal
     reward += change_in_distance * REWARD_PER_DISTANCE
     if (change_in_distance > 0):
@@ -94,6 +94,7 @@ def policy():
        return 2
    else:
        return 3
+       
 #saves q-table and exploration rate in a file for the future simulation runs    
 def save_q_table(path):
     np.save(path,Q_table)

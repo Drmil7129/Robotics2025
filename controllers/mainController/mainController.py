@@ -1,7 +1,7 @@
 
 #importing algorithms from lib, python modules and numpy for mathematical functions
 from controller import Robot, Motor
-import sys, os, random
+import sys, os, random, time
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
 import localisation
 import reinforcement_learning as rl
@@ -116,6 +116,7 @@ def main():
     cargo = True
     goal_reached = False
     progress = True
+    start = time.time()
     while robot.step(timestep) != -1:
         #read imu readings and update odometry
         fpy = imu.getRollPitchYaw()
@@ -148,6 +149,7 @@ def main():
 
     rl.save_q_table("../lib/q_table")
     print("Q_table saved")
-
+    end = time.time()
+    print("Time taken is ", end-start)
 if __name__ == "__main__":
     main()
