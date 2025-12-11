@@ -28,15 +28,19 @@ class ProbabilisticMotionModel:
         if variance <= 0: return 0
         return random.gauss(0, math.sqrt(variance))
 
+
+    #adding motion data plus noise to each particle 
     def prediction_step(self, particles, delta_dist, delta_theta):
+
+        #calculating rotation noise variances
+        rot_noise_variance = (self.alpha1 * abs(delta_theta) + 
+                            self.alpha2 * abs(delta_dist))
+            
+        #calculating translation noise variances
+        trans_noise_variance = (self.alpha3 * abs(delta_dist) + 
+                                self.alpha4 * abs(delta_theta))
    
         for p in particles:
-    
-            rot_noise_variance = (self.alpha1 * abs(delta_theta) + 
-                                  self.alpha2 * abs(delta_dist))
-            
-            trans_noise_variance = (self.alpha3 * abs(delta_dist) + 
-                                    self.alpha4 * abs(delta_theta))
 
             sampled_rot = delta_theta + self.sample_gaussian(rot_noise_variance)
             sampled_dist = delta_dist + self.sample_gaussian(trans_noise_variance)
@@ -52,6 +56,8 @@ class ProbabilisticMotionModel:
                 p.theta += 2 * PI
         
         return particles
+
+
 
 class OdometryConfiguration:
     def __init__(self):
@@ -81,6 +87,7 @@ class OdometryResult:
 
 
 class Odometry:
+    # Initialize odometry components
     def __init__(self):
         self.config = OdometryConfiguration()
         self.state = OdometryState()
@@ -93,6 +100,7 @@ class Odometry:
 
         self.EncoderUnit = 159.23
 
+    # Initialize particles randomly across the map
     def initialize_global(self, map_width, map_height):
       
         self.particles = []
@@ -117,7 +125,8 @@ class Odometry:
 
     def get_particles(self):
         return self.particles
-    
+
+    # initialize (or reset) the odometry with random particles and starting positions
     def start_pos(self, pos_left, pos_right):
         self.result.x = 0.0
         self.result.y = 0.0
@@ -134,48 +143,58 @@ class Odometry:
            len(pos_right_list) != len(self.state.pos_right_prev):
             raise ValueError("Number of wheels provided does not match start_pos configuration")
 
+        #compute current positions in encoder units
         current_pos_left = [self.EncoderUnit * p for p in pos_left_list]
         current_pos_right = [self.EncoderUnit * p for p in pos_right_list]
+
+        #compute the deltas for the right wheels
         deltas_pos_right = []
         for i, current_pos in enumerate(current_pos_right):
             delta = current_pos - self.state.pos_right_prev[i]
             deltas_pos_right.append(delta)
 
-    
+        #compute the deltas for the left wheels
         deltas_pos_left = []
         for i, current_pos in enumerate(current_pos_left):
             delta = current_pos - self.state.pos_left_prev[i]
             deltas_pos_left.append(delta)
 
+        #compute average delta for left and right wheels
         avg_delta_pos_left = sum(deltas_pos_left) / len(deltas_pos_left)
         avg_delta_pos_right = sum(deltas_pos_right) / len(deltas_pos_right)
     
-
+        #Convert to distance traveled
         delta_left = avg_delta_pos_left * self.config.wheel_conversion_left
         delta_right = avg_delta_pos_right * self.config.wheel_conversion_right
         delta_dist = (delta_right + delta_left) / 2.0
 
+        #projected 2D distance
         flat_dist = delta_dist * math.cos(pitch_radians)
 
+        #compute change in orientation
         delta_theta = (delta_right - delta_left) / self.config.wheel_distance
         theta2 = self.result.theta + delta_theta / 2.0
 
+        #compute change in pose in the deterministic part of odometry
         delta_x = flat_dist * math.cos(theta2)
         delta_y = flat_dist * math.sin(theta2)
 
+        #update pose and orientation
         self.result.x += delta_x
         self.result.y += delta_y
         self.result.theta += delta_theta
 
+        #wrap theta to [-pi, pi]
         if self.result.theta > PI:
             self.result.theta -= 2 * PI
         elif self.result.theta < -PI:
             self.result.theta += 2 * PI
       
 
-
+        #update particles based on motion model
         self.particles = self.motion_model.prediction_step(self.particles, flat_dist, delta_theta)    
 
+        #update previous positions for next iteration
         self.state.pos_left_prev = list(current_pos_left)
         self.state.pos_right_prev = list(current_pos_right)
 

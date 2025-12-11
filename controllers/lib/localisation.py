@@ -265,7 +265,7 @@ def update_particle_weights(particles, readings,
 
 # ================== LOW-VARIANCE RESAMPLING ==================
 
-def low_variance_resample(particles)
+def low_variance_resample(particles):
     N = len(particles)
     if N == 0:
         return []
