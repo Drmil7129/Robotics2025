@@ -28,6 +28,7 @@ A robot navigation system for rough terrain using Monte Carlo Localization (MCL)
 - Q-table implementation and updates
 - Action selection with exploration
 - Reward function design
+- Policy function
 
 **Nasser - Odometry:**
 - Wheel encoder processing
