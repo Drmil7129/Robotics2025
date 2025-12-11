@@ -213,40 +213,33 @@ def compute_sensor_weight_for_pose(readings, x, y, theta,
     likelihoods = []
     
     for sname in SENSOR_NAMES:
-        # Now uses the single parameter: sigma_all
         res = compute_single_sensor_likelihood(sname, readings, x, y, theta, sigma_all)
         
         if res is not None:
             lik = res[0]
-            # Ensure likelihood is never exactly 0 to avoid log(0) error
             likelihoods.append(max(lik, eps))
 
-    # 2. Compute Geometric Mean
     if not likelihoods:
         return eps, None, None, None
 
-    # Sum of logs = Log of product
     sum_log_likelihood = sum(math.log(p) for p in likelihoods)
     
-    # Average the logs (this is the 1/N step)
     avg_log_likelihood = sum_log_likelihood / len(likelihoods)
     
-    # Convert back to normal probability
     w = math.exp(avg_log_likelihood)
 
     return w, None, None, None
 
 
 def update_particle_weights(particles, readings,
-                            sigma_front=100.0, sigma_side=100.0,
+                            sigma_all=100.0,
                             eps=1e-9):
     total_w = 0.0
 
     for p in particles:
         w, _, _, _ = compute_sensor_weight_for_pose(
             readings, p.x, p.y, p.theta,
-            sigma_front=sigma_front,
-            sigma_side=sigma_side,
+            sigma_all=sigma_all,
             eps=eps,
         )
         p.weight = w
@@ -265,7 +258,7 @@ def update_particle_weights(particles, readings,
 
 # ================== LOW-VARIANCE RESAMPLING ==================
 
-def low_variance_resample(particles)
+def low_variance_resample(particles):
     N = len(particles)
     if N == 0:
         return []
