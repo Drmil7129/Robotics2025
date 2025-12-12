@@ -16,6 +16,7 @@ A robot navigation system for rough terrain using Monte Carlo Localization (MCL)
 - **Webots R2023b** - Robot simulation platform
 - **NumPy** - Array operations and mathematical computations
 - **Python Math Library** - Trigonometric functions
+- **Webots Moose** - Prebuilt robot and map (sensors and additional obstacles added)
 
 ### What We Implemented
 
